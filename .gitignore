@@ -1,0 +1,5 @@
+# Laufzeitdaten (Pläne und PINs) nicht ins Repo
+data/*
+!data/.gitkeep
+app/data/
+node_modules/

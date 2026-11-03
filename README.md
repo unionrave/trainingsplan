@@ -12,18 +12,40 @@ Mehrere Personen mit eigenem Plan und Verlauf, keine externen Abhängigkeiten (N
 - **PIN pro Person:** 4–8 Ziffern, ändern jederzeit möglich
 - **Trainer-Zugang:** Mit der Trainer-PIN Zugriff auf alle Pläne, Bearbeiten, PINs zurücksetzen, Personen verwalten
 
+## Aufbau des Repos
+```
+trainingsplan/
+├── docker-compose.yml   Stack für Unraid
+├── app/                 Anwendung (wird schreibgeschützt in den Container gemountet)
+│   ├── server.js
+│   ├── index.html
+│   └── library.json     Übungsbibliothek, frei editierbar
+└── data/                Pläne und PINs (wird nicht ins Repo übernommen)
+```
+
 ## Installation auf Unraid
-1. Ordner `/mnt/user/appdata/trainingsplan/app/` anlegen und `server.js`, `index.html` und `library.json` hineinkopieren.
-2. In `docker-compose.yml` die `TRAINER_PIN` ändern und die Datei im Compose Manager als Stack einfügen.
+1. Im Unraid-Terminal das Repo nach `/mnt/user/appdata` klonen:
+   ```
+   cd /mnt/user/appdata
+   git clone https://github.com/unionrave/trainingsplan.git
+   ```
+   Damit entstehen `app/` und `data/` automatisch am richtigen Ort.
+2. Den Inhalt von `docker-compose.yml` im Compose Manager als neuen Stack einfügen und dort `TRAINER_PIN` ändern.
 3. Stack starten und die App unter `http://<UNRAID-IP>:8085` öffnen.
 
-Die Daten liegen unter `/mnt/user/appdata/trainingsplan/data/` (eine JSON-Datei pro Person im Unterordner `users`).
+## Update
+```
+cd /mnt/user/appdata/trainingsplan
+git pull
+```
+Danach den Container neu starten. Die Daten in `data/` bleiben erhalten.
+Die `TRAINER_PIN` besser nur in der Kopie im Compose Manager ändern und nicht in der Datei im Repo-Ordner, sonst meldet `git pull` Konflikte.
 
-## Update einer älteren Version
-Dateien im `app`-Ordner ersetzen und den Container neu starten. Bestehende Personen bleiben erhalten. Wer noch keine PIN hat, vergibt sie beim ersten Anmelden: Die erste eingegebene PIN wird übernommen.
+### Update von der ersten Version (alle Dateien im Hauptordner)
+Ein `git pull` verschiebt die Dateien automatisch nach `app/`. Vorhandene Personen bleiben erhalten. Wer noch keine PIN hat, vergibt sie beim ersten Anmelden: Die erste eingegebene PIN wird übernommen.
 
 ## Übungsbibliothek anpassen
-Die Übungen stehen in `library.json` (Name, Muskelgruppe, Gerät, Ausführung, Tipps) und lassen sich dort direkt ergänzen oder ändern. Nach dem Speichern genügt ein Neuladen der Seite.
+Die Übungen stehen in `app/library.json` (Name, Muskelgruppe, Gerät, Ausführung, Tipps) und lassen sich dort direkt ergänzen oder ändern. Nach dem Speichern genügt ein Neuladen der Seite.
 
 ## Sicherheit
 - PINs werden nur als Hash gespeichert. Nach 5 falschen Versuchen wird der Zugang für 5 Minuten gesperrt.

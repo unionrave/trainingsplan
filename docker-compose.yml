@@ -1,20 +1,22 @@
 # Trainingsplan – Docker Compose für Unraid (Compose Manager)
 #
-# Vorbereitung:
-#   1. Ordner anlegen:  /mnt/user/appdata/trainingsplan/app
-#   2. Dort server.js, index.html und library.json ablegen
-#   3. TRAINER_PIN unten ändern
-#   4. Stack mit dieser Datei starten, danach erreichbar unter http://<UNRAID-IP>:8085
+# Einrichtung (einmalig, im Unraid-Terminal):
+#   cd /mnt/user/appdata
+#   git clone https://github.com/unionrave/trainingsplan.git
+# Damit liegen die App-Dateien unter /mnt/user/appdata/trainingsplan/app
+# und die Daten (Pläne, PINs) unter /mnt/user/appdata/trainingsplan/data.
 #
-# Die Daten (eine JSON-Datei pro Person) liegen unter
-# /mnt/user/appdata/trainingsplan/data und bleiben bei Updates erhalten.
+# Danach diesen Stack im Compose Manager einfügen, TRAINER_PIN ändern und starten.
+# Erreichbar unter http://<UNRAID-IP>:8085
+#
+# Update:  cd /mnt/user/appdata/trainingsplan && git pull
+#          danach den Container neu starten.
 
 services:
   trainingsplan:
     image: node:20-alpine
     container_name: trainingsplan
     restart: unless-stopped
-    user: "99:100"            # Unraid-Standard: nobody:users
     working_dir: /app
     command: ["node", "server.js"]
     environment:
