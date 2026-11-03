@@ -10,6 +10,7 @@ Mehrere Personen mit eigenem Plan und Verlauf, keine externen Abhängigkeiten (N
 - **Übungsbibliothek:** 40 Übungen mit Ausführung und Tipps, durchsuchbar und filterbar nach Muskelgruppe und Gerät. Übungen lassen sich direkt in einen Trainingstag übernehmen, eigene Übungen sind möglich
 - **Verlauf:** Gewichtsdiagramm pro Übung und Liste aller Einheiten
 - **PIN pro Person:** 4–8 Ziffern, ändern jederzeit möglich
+- **Design:** dunkler Hallenboden-Look mit Hantelscheibe im Hintergrund, passendes helles Design (folgt der Geräteeinstellung), Sätze als Hantelscheiben, Pausentimer als Ring
 - **Trainer-Zugang:** Mit der Trainer-PIN Zugriff auf alle Pläne, Bearbeiten, PINs zurücksetzen, Personen verwalten
 
 ## Aufbau des Repos
@@ -19,7 +20,8 @@ trainingsplan/
 ├── app/                 Anwendung (wird schreibgeschützt in den Container gemountet)
 │   ├── server.js
 │   ├── index.html
-│   └── library.json     Übungsbibliothek, frei editierbar
+│   ├── library.json     Übungsbibliothek, frei editierbar
+│   └── fonts/           Schriften (Big Shoulders Display, Barlow, SIL OFL), lokal gebündelt
 └── data/                Pläne und PINs (wird nicht ins Repo übernommen)
 ```
 

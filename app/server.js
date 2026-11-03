@@ -155,6 +155,14 @@ const server = http.createServer(async (req, res) => {
       const [f, type] = STATIC[p];
       return send(res, 200, fs.readFileSync(path.join(__dirname, f)), type);
     }
+    const font = method === 'GET' && p.match(/^\/fonts\/([a-z0-9-]+\.woff2)$/);
+    if (font) { // gebündelte Schriften (offline nutzbar), lange zwischenspeichern
+      try {
+        const buf = fs.readFileSync(path.join(__dirname, 'fonts', font[1]));
+        res.writeHead(200, { 'Content-Type': 'font/woff2', 'Cache-Control': 'public, max-age=31536000, immutable' });
+        return res.end(buf);
+      } catch { return send(res, 404, { error: 'Nicht gefunden' }); }
+    }
     if (p === '/healthz') return send(res, 200, { ok: true });
     if (!p.startsWith('/api/')) return send(res, 404, { error: 'Nicht gefunden' });
 
