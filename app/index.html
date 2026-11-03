@@ -49,6 +49,11 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .sf input{width:100%;min-width:0;text-align:center}
 .sf span{font-size:13px;color:var(--muted);white-space:nowrap}
 .setrow.done .sf input{border-color:var(--ok)}
+.set.warm{border-style:dashed}
+.exrow .sf{flex-direction:row;font-size:inherit;color:inherit;gap:6px}
+.psrow{flex-wrap:wrap}
+.psrow .sf{flex:1 1 96px}
+.psrow .tail{display:flex;align-items:center;gap:8px;margin-left:auto}
 .exrow{border-top:1px solid var(--line);padding:10px 0}
 .exrow .name{width:100%;margin-bottom:8px;font-weight:600}
 .nums{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
@@ -193,17 +198,26 @@ function lastOf(name) {
   }
   return null;
 }
-// Wert pro Satz: eingegebener Wert, sonst Satz der letzten Einheit (Gewicht) bzw. Plan-Ziel (Wiederholungen)
+// Wert pro Satz: eingegebener Wert, sonst Einzelplan des Satzes, sonst Satz der letzten Einheit (Gewicht) bzw. Plan-Ziel (Wiederholungen)
 const filled = (ss, k, exId, i) => { const v = (ss[k][exId] || [])[i]; return v === undefined || v === null || v === '' ? undefined : v; };
 function resW(ex, ss, i) {
   const v = filled(ss, 'w', ex.id, i); if (v !== undefined) return v;
+  if (ex.plan && ex.plan[i]) return ex.plan[i].w;
   const l = lastOf(ex.name);
-  if (l && l.detail && l.detail.length) return (l.detail[i] || l.detail[l.detail.length - 1]).w;
+  const det = l && l.detail ? l.detail.filter((s) => !s.warm) : [];
+  if (det.length) return (det[i] || det[det.length - 1]).w;
   return ex.weight;
 }
-const resR = (ex, ss, i) => { const v = filled(ss, 'r', ex.id, i); return v !== undefined ? v : ex.reps; };
-const fmtSets = (it) => it.detail && it.detail.length ? it.detail.map((s) => `${s.w} kg × ${s.r}`).join(' · ') : `${it.sets} × ${it.reps} mit ${it.weight} kg`;
-const allEx =() => [...lib.exercises.map((e) => ({ ...e, builtin: true })), ...((S && S.custom) || []).map((e) => ({ ...e, builtin: false }))];
+function resR(ex, ss, i) {
+  const v = filled(ss, 'r', ex.id, i); if (v !== undefined) return v;
+  return ex.plan && ex.plan[i] ? ex.plan[i].r : ex.reps;
+}
+const isWarm = (ex, i) => !!(ex.plan && ex.plan[i] && ex.plan[i].warm);
+const fmtS = (s) => `${s.warm ? 'Aufw. ' : ''}${s.w} kg × ${s.r}`;
+const fmtSets = (it) => it.detail && it.detail.length ? it.detail.map(fmtS).join(' · ') : `${it.sets} × ${it.reps} mit ${it.weight} kg`;
+const fmtPlan = (ex) => ex.plan.map(fmtS).join(' · ');
+const clearSessEx = (dayId, exId) => { const s = S.sessions[dayId]; if (s) ['sets', 'w', 'r'].forEach((k) => { if (s[k]) delete s[k][exId]; }); };
+const allEx = () => [...lib.exercises.map((e) => ({ ...e, builtin: true })), ...((S && S.custom) || []).map((e) => ({ ...e, builtin: false }))];
 const findLib = (name) => { const n = norm(name); return allEx().find((e) => norm(e.name) === n || (e.aliases || []).some((a) => norm(a) === n)); };
 
 /* ---------- Pausentimer ---------- */
@@ -320,9 +334,9 @@ function viewTrain() {
     const info = findLib(ex.name) ? `<button class="ic info" data-a="exinfo" data-name="${esc(ex.name)}" aria-label="Übungsinfo">ℹ︎</button>` : '';
     return `<div class="card">
       <div class="nameline"><div class="exname">${esc(ex.name)}</div>${info}</div>
-      <div class="muted small">Ziel: ${ex.sets} × ${esc(ex.reps)}${last ? ` · Zuletzt: ${esc(fmtSets(last))} (${fmtDate(last.date)})` : ''}</div>
+      <div class="muted small">${ex.plan ? 'Plan: ' + esc(fmtPlan(ex)) : `Ziel: ${ex.sets} × ${esc(ex.reps)}`}${last ?` · Zuletzt: ${esc(fmtSets(last))} (${fmtDate(last.date)})` : ''}</div>
       <div style="margin:10px 0">${arr.map((on, i) => `<div class="setrow ${on ? 'done' : ''}">
-        <button class="set ${on ? 'on' : ''}" data-a="set" data-ex="${ex.id}" data-i="${i}" aria-label="Satz ${i + 1} abhaken">${i + 1}</button>
+        <button class="set ${on ? 'on' : ''} ${isWarm(ex, i) ? 'warm' : ''}" data-a="set" data-ex="${ex.id}" data-i="${i}" aria-label="${isWarm(ex, i) ? 'Aufwärmsatz' : 'Satz'} ${i + 1} abhaken">${isWarm(ex, i) ? 'W' : i + 1}</button>
         <label class="sf"><input type="number" inputmode="decimal" step="0.5" data-f="sw" data-ex="${ex.id}" data-i="${i}" value="${esc(resW(ex, ss, i))}" aria-label="Gewicht Satz ${i + 1}"><span>kg</span></label>
         <span class="x">×</span>
         <label class="sf"><input type="text" inputmode="numeric" data-f="sr" data-ex="${ex.id}" data-i="${i}" value="${esc(resR(ex, ss, i))}" aria-label="Wiederholungen Satz ${i + 1}"><span>Wdh.</span></label>
@@ -338,6 +352,29 @@ function viewTrain() {
     <div class="sticky"><button class="btn primary block" data-a="finish">Training abschließen (${done}/${total} Sätze)</button></div>`;
 }
 
+function exPlanHTML(d, x) {
+  const at = `data-day="${d.id}" data-ex="${x.id}"`;
+  const btns = `<button class="ic" data-a="moveEx" ${at} data-dir="-1">↑</button><button class="ic" data-a="moveEx" ${at} data-dir="1">↓</button><button class="ic danger" data-a="delEx" ${at}>✕</button>`;
+  const rest = `<label>Pause (s)<input type="number" inputmode="numeric" min="0" max="900" placeholder="${S.settings.rest}" data-f="ex.rest" ${at} value="${x.rest || ''}"></label>`;
+  if (!x.plan) {
+    return `<div class="nums">
+        <label>Sätze<input type="number" inputmode="numeric" min="1" max="10" data-f="ex.sets" ${at} value="${x.sets}"></label>
+        <label>Wdh.<input type="text" data-f="ex.reps" ${at} value="${esc(x.reps)}"></label>
+        <label>kg<input type="number" inputmode="decimal" step="0.5" data-f="ex.weight" ${at} value="${x.weight}"></label>
+        ${rest}${btns}</div>
+      <button class="btn block" style="margin-top:8px" data-a="perSet" ${at}>Sätze einzeln planen (Pyramide, Aufwärmen)</button>`;
+  }
+  return `<div class="nums">${rest}${btns}</div>
+    <div style="margin-top:8px">${x.plan.map((s, i) => `<div class="setrow psrow">
+      <span class="badge" style="min-width:34px;text-align:center;margin:0">${s.warm ? 'W' : i + 1}</span>
+      <label class="sf"><input type="number" inputmode="decimal" step="0.5" data-f="ps.w" ${at} data-i="${i}" value="${esc(s.w)}" aria-label="Gewicht Satz ${i + 1}"><span>kg</span></label>
+      <span class="x">×</span>
+      <label class="sf"><input type="text" data-f="ps.r" ${at} data-i="${i}" value="${esc(s.r)}" aria-label="Wiederholungen Satz ${i + 1}"><span>Wdh.</span></label>
+      <span class="tail"><label class="check" style="font-size:13px!important;padding:0"><input type="checkbox" data-f="ps.warm" ${at} data-i="${i}" ${s.warm ? 'checked' : ''}> Aufwärmen</label>
+      <button class="ic danger" data-a="delPlanSet" ${at} data-i="${i}" aria-label="Satz ${i + 1} löschen">✕</button></span></div>`).join('')}</div>
+    <div class="row" style="margin:8px 0 0"><button class="btn grow" data-a="addPlanSet" ${at}>＋ Satz</button><button class="btn grow" data-a="uniform" ${at}>Alle Sätze gleich</button></div>`;
+}
+
 function viewPlan() {
   const names = [...new Set(allEx().map((e) => e.name))];
   const days = S.days.map((d) => `<div class="card">
@@ -349,15 +386,7 @@ function viewPlan() {
     </div>
     ${d.exercises.map((x) => `<div class="exrow">
       <input class="name" list="exlist" data-f="ex.name" data-day="${d.id}" data-ex="${x.id}" value="${esc(x.name)}" aria-label="Übung">
-      <div class="nums">
-        <label>Sätze<input type="number" inputmode="numeric" min="1" max="10" data-f="ex.sets" data-day="${d.id}" data-ex="${x.id}" value="${x.sets}"></label>
-        <label>Wdh.<input type="text" data-f="ex.reps" data-day="${d.id}" data-ex="${x.id}" value="${esc(x.reps)}"></label>
-        <label>kg<input type="number" inputmode="decimal" step="0.5" data-f="ex.weight" data-day="${d.id}" data-ex="${x.id}" value="${x.weight}"></label>
-        <label>Pause (s)<input type="number" inputmode="numeric" min="0" max="900" placeholder="${S.settings.rest}" data-f="ex.rest" data-day="${d.id}" data-ex="${x.id}" value="${x.rest || ''}"></label>
-        <button class="ic" data-a="moveEx" data-day="${d.id}" data-ex="${x.id}" data-dir="-1">↑</button>
-        <button class="ic" data-a="moveEx" data-day="${d.id}" data-ex="${x.id}" data-dir="1">↓</button>
-        <button class="ic danger" data-a="delEx" data-day="${d.id}" data-ex="${x.id}">✕</button>
-      </div>
+      ${exPlanHTML(d, x)}
       <input class="name" style="margin:8px 0 0;font-weight:400" placeholder="Notiz (optional)" data-f="ex.note" data-day="${d.id}" data-ex="${x.id}" value="${esc(x.note)}">
     </div>`).join('')}
     <button class="btn block" style="margin-top:10px" data-a="addEx" data-day="${d.id}">＋ Übung</button>
@@ -464,11 +493,17 @@ function finish() {
   const day = findDay(curDay), ss = sess(day), items = [];
   day.exercises.forEach((ex) => {
     const detail = [];
-    padSets(ss.sets[ex.id], ex.sets).forEach((on, i) => { if (on) detail.push({ w: num(resW(ex, ss, i)), r: String(resR(ex, ss, i)) }); });
+    padSets(ss.sets[ex.id], ex.sets).forEach((on, i) => {
+      if (!on) return;
+      const s = { w: num(resW(ex, ss, i)), r: String(resR(ex, ss, i)) };
+      if (isWarm(ex, i)) s.warm = true;
+      detail.push(s);
+    });
     if (!detail.length) return;
-    const top = detail.reduce((a, b) => (b.w >= a.w ? b : a)); // schwerster Satz für Verlauf und Diagramm
+    const work = detail.filter((s) => !s.warm), pool = work.length ? work : detail;
+    const top = pool.reduce((a, b) => (b.w >= a.w ? b : a)); // schwerster Arbeitssatz für Verlauf und Diagramm
     items.push({ name: ex.name, weight: top.w, reps: top.r, sets: detail.length, planned: ex.sets, detail });
-    ex.weight = top.w; // Plan-Gewicht für das nächste Mal übernehmen
+    if (!ex.plan) ex.weight = top.w; // Plan-Gewicht für das nächste Mal übernehmen (bei Einzelplanung bleibt der Plan unverändert)
   });
   if (!items.length) { toast('Noch keine Sätze abgehakt'); return; }
   S.history.push({ id: rid(), date: new Date().toISOString(), day: day.name, items });
@@ -575,6 +610,30 @@ async function act(a, d) {
       }
       break;
     }
+    case 'perSet': { // Sätze einzeln planen
+      const ex = findEx(d.day, d.ex);
+      ex.plan = Array.from({ length: ex.sets }, () => ({ w: num(ex.weight), r: String(ex.reps), warm: false }));
+      clearSessEx(d.day, ex.id); break;
+    }
+    case 'uniform': { // zurück zu „alle Sätze gleich“
+      const ex = findEx(d.day, d.ex), work = ex.plan.filter((s) => !s.warm), base = work.length ? work : ex.plan;
+      ex.sets = Math.max(1, base.length); ex.weight = Math.max(...base.map((s) => s.w)); ex.reps = base[0].r;
+      delete ex.plan; clearSessEx(d.day, ex.id); break;
+    }
+    case 'addPlanSet': {
+      const ex = findEx(d.day, d.ex);
+      if (ex.plan.length >= 10) return toast('Maximal 10 Sätze pro Übung');
+      const l = ex.plan[ex.plan.length - 1];
+      ex.plan.push({ w: l.w, r: l.r, warm: false }); ex.sets = ex.plan.length; break;
+    }
+    case 'delPlanSet': {
+      const ex = findEx(d.day, d.ex), i = +d.i;
+      if (ex.plan.length <= 1) return toast('Mindestens ein Satz nötig');
+      ex.plan.splice(i, 1); ex.sets = ex.plan.length;
+      const s = S.sessions[d.day];
+      if (s) ['sets', 'w', 'r'].forEach((k) => { if (s[k] && Array.isArray(s[k][ex.id])) s[k][ex.id].splice(i, 1); });
+      break;
+    }
     case 'addDay': S.days.push({ id: rid(), name: 'Neuer Tag', exercises: [] }); break;
     case 'delDay': if (!confirm('Diesen Trainingstag samt Übungen löschen?')) return; S.days = S.days.filter((x) => x.id !== d.day); delete S.sessions[d.day]; break;
     case 'moveDay': move(S.days, S.days.findIndex((x) => x.id === d.day), +d.dir); break;
@@ -608,13 +667,14 @@ document.addEventListener('input', (e) => {
       : k === 'rest' ? Math.max(0, Math.min(900, parseInt(v) || 0))
       : v;
   }
+  else if (f.startsWith('ps.')) { const s = findEx(d.day, d.ex).plan[+d.i]; if (f === 'ps.w') s.w = num(v); else if (f === 'ps.r') s.r = v; }
   else if (f === 'set.rest') S.settings.rest = Math.max(10, Math.min(900, parseInt(v) || 90));
   else if (f === 'sw' || f === 'sr') {
     const k = f === 'sw' ? 'w' : 'r', day = findDay(curDay), ex = findEx(day.id, d.ex), ss = sess(day), i = +d.i;
     const res = (j) => String(k === 'w' ? resW(ex, ss, j) : resR(ex, ss, j));
     const old = res(i), arr = (ss[k][ex.id] ||= []), done = ss.sets[ex.id] || [];
     // Folgesätze, die bisher denselben Wert hatten, ziehen mit (einzeln abweichende bleiben unverändert)
-    for (let j = i + 1; j < ex.sets; j++) {
+    for (let j = i + 1; !ex.plan && j < ex.sets; j++) {
       if (done[j] || res(j) !== old) continue;
       arr[j] = v;
       const inp = document.querySelector(`[data-f="${f}"][data-ex="${d.ex}"][data-i="${j}"]`);
@@ -630,6 +690,7 @@ document.addEventListener('change', async (e) => {
   const el = e.target, f = el.dataset.f;
   if (el.id === 'userSel') { await loadUser(el.value); return; }
   if (f === 'histEx') { histEx = el.value; render(); return; }
+  if (f === 'ps.warm') { findEx(el.dataset.day, el.dataset.ex).plan[+el.dataset.i].warm = el.checked; save(); render(); return; }
   if (f && f.startsWith('set.') && el.type === 'checkbox') { S.settings[f.slice(4)] = el.checked; save(); return; }
   if (f === 'userName') {
     const name = el.value.trim(); if (!name) { el.value = S.name; return; }

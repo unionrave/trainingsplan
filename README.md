@@ -6,7 +6,7 @@ Mehrere Personen mit eigenem Plan und Verlauf, keine externen Abhängigkeiten (N
 ## Funktionen
 - **Training:** Trainingstag wählen, Sätze abhaken, Gewicht und Wiederholungen pro Satz eintragen (die Werte der letzten Einheit sind pro Satz vorbelegt), Einheit abschließen
 - **Pausentimer:** startet nach jedem abgehakten Satz, mit Signalton und Vibration. Standard-Pause und Pause pro Übung einstellbar, +/−15 Sekunden, überspringen
-- **Plan:** Tage und Übungen anlegen, umbenennen, sortieren, löschen. Übungsnamen werden aus der Bibliothek vorgeschlagen
+- **Plan:** Tage und Übungen anlegen, umbenennen, sortieren, löschen. Übungsnamen werden aus der Bibliothek vorgeschlagen. Pro Übung wahlweise „alle Sätze gleich" oder jeder Satz einzeln geplant (Gewicht, Wiederholungen, Aufwärmsatz), z. B. für Pyramidensätze
 - **Übungsbibliothek:** 40 Übungen mit Ausführung und Tipps, durchsuchbar und filterbar nach Muskelgruppe und Gerät. Übungen lassen sich direkt in einen Trainingstag übernehmen, eigene Übungen sind möglich
 - **Verlauf:** Gewichtsdiagramm pro Übung und Liste aller Einheiten
 - **PIN pro Person:** 4–8 Ziffern, ändern jederzeit möglich
