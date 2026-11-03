@@ -9,20 +9,21 @@
 :root{--bg:#f4f5f7;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--accent:#2563eb;--ok:#16a34a;--danger:#dc2626}
 @media (prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#151b2e;--text:#e5e7eb;--muted:#94a3b8;--line:#263048;--accent:#3b82f6;--ok:#22c55e;--danger:#f87171}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:90px}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:150px}
 header{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 14px 0;border-bottom:1px solid var(--line)}
 h1{font-size:20px;margin:0}h2{margin:0 0 6px;font-size:18px}
 .row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .grow{flex:1;min-width:0}
 .muted{color:var(--muted)}.small{font-size:13px}
-nav{display:flex;gap:4px}
-.tab{flex:1;background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);padding:10px 4px;font-size:15px;font-weight:600;cursor:pointer}
+nav{display:flex;gap:2px;overflow-x:auto}
+.tab{flex:1;white-space:nowrap;background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);padding:10px 8px;font-size:15px;font-weight:600;cursor:pointer}
 .tab.on{color:var(--accent);border-color:var(--accent)}
 main{max-width:760px;margin:0 auto;padding:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
-select,input{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
+select,input,textarea{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
 select{flex:1}
-input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+textarea{width:100%;min-height:90px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
 .btn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.danger{color:var(--danger)}
@@ -43,7 +44,10 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
 .fields input,.exrow input{width:100%}
 .exrow{border-top:1px solid var(--line);padding:10px 0}
 .exrow .name{width:100%;margin-bottom:8px;font-weight:600}
-.exrow .nums{display:flex;gap:8px;align-items:flex-end}
+.nums{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.nums label{min-width:64px}
+.check{display:flex!important;flex-direction:row!important;align-items:center;gap:10px;font-size:15px!important;color:var(--text)!important;padding:6px 0}
+.check input{width:auto!important}
 .title{font-weight:700;font-size:17px}
 .sticky{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 35%)}
 .sticky .btn{max-width:732px;margin:0 auto;display:block}
@@ -51,21 +55,41 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
 .chart text{fill:var(--muted);font-size:12px}
 .hist-item{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 ul.plain{margin:6px 0 0;padding-left:18px}
-#toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+ol.steps{margin:6px 0;padding-left:20px}
+ol.steps li,ul.plain li{margin-bottom:4px}
+.stack{display:grid;gap:10px}
+.stack input,.stack select{width:100%}
+.badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--muted);margin:0 4px 4px 0}
+.badge.trainer{background:var(--accent);border-color:var(--accent);color:#fff}
+.libcard{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px}
+.nameline{display:flex;align-items:center;gap:8px}
+.nameline .exname{flex:1}
+.ic.info{width:32px;height:32px;font-size:14px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.modal[hidden]{display:none}
+.sheet{background:var(--card);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+@media (min-width:700px){.modal{align-items:center}.sheet{border-radius:18px}}
+#timer{position:fixed;left:0;right:0;bottom:14px;z-index:8;padding:0 14px;display:none}
+#timer.on{display:block}
+body[data-tab=train] #timer{bottom:78px}
+.tbox{max-width:732px;margin:0 auto;background:#111827;color:#fff;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.tt{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;min-width:64px}
+.tbar{flex:1;height:6px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden}
+.tbar>div{height:100%;background:#22c55e}
+.tbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:8px 10px;font:inherit;font-size:14px;cursor:pointer}
+#toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30;max-width:92vw;text-align:center}
 #toast.on{opacity:1}
 </style>
 </head>
-<body>
+<body data-tab="train">
 <header>
-  <div class="row"><h1 class="grow">🏋️ Trainingsplan</h1><span id="status" class="muted small"></span></div>
-  <div class="row"><select id="userSel" aria-label="Person"></select><button class="ic" data-a="newUser" title="Person hinzufügen">＋</button></div>
-  <nav>
-    <button class="tab" data-a="tab" data-tab="train">Training</button>
-    <button class="tab" data-a="tab" data-tab="plan">Plan</button>
-    <button class="tab" data-a="tab" data-tab="hist">Verlauf</button>
-  </nav>
+  <div class="row"><h1 class="grow">🏋️ Trainingsplan</h1><span id="role"></span><span id="status" class="muted small"></span></div>
+  <div class="row" id="userbar"></div>
+  <nav id="tabs"></nav>
 </header>
 <main id="app"></main>
+<div id="timer"></div>
+<div id="modal" class="modal" hidden><div class="sheet" id="sheet"></div></div>
 <div id="toast"></div>
 
 <script>
@@ -73,42 +97,79 @@ const $ = (s) => document.querySelector(s);
 const rid = () => Math.random().toString(36).slice(2, 9);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = (v) => parseFloat(String(v).replace(',', '.')) || 0;
+const norm = (s) => String(s || '').trim().toLowerCase();
 const fmtDate = (iso, long) => new Date(iso).toLocaleDateString('de-DE', long ? { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' } : { day: '2-digit', month: '2-digit' });
+const fmtT = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+const PIN_RE = /^\d{4,8}$/;
+const BASE_TITLE = 'Trainingsplan';
 
-let users = [], uid = null, S = null, tab = 'train', curDay = null, histEx = null, timer = null, pending = false;
+let users = [], uid = null, S = null, lib = { muscles: [], equipment: [], exercises: [] };
+let tab = 'train', curDay = null, histEx = null, saveTimer = null, pending = false, loginFor = null;
+let libF = { q: '', muscle: '', equip: '' };
+let auth = { trainer: null, tokens: {} };
+try { auth = Object.assign(auth, JSON.parse(localStorage.getItem('tp-auth') || '{}')); auth.tokens = auth.tokens || {}; } catch {}
+const saveAuth = () => { try { localStorage.setItem('tp-auth', JSON.stringify(auth)); } catch {} };
 
+/* ---------- API ---------- */
 async function api(path, opts = {}) {
-  const r = await fetch('/api' + path, { headers: { 'Content-Type': 'application/json' }, ...opts });
-  if (!r.ok) throw new Error(r.status);
-  return r.json();
+  const m = path.match(/^\/users\/([a-z0-9-]+)/);
+  const t = auth.trainer || (m && auth.tokens[m[1]]) || '';
+  const r = await fetch('/api' + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: 'Bearer ' + t } : {}) } });
+  const data = await r.json().catch(() => null);
+  if (!r.ok) { const e = new Error((data && data.error) || ('Fehler ' + r.status)); e.status = r.status; throw e; }
+  return data;
 }
 function status(t) { $('#status').textContent = t; }
-function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 1800); }
+let toastTimer;
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), 2200); }
 
+/* ---------- Speichern ---------- */
 async function doSave() {
-  try { await api('/users/' + uid, { method: 'PUT', body: JSON.stringify(S) }); pending = false; status('Gespeichert ✓'); }
-  catch { status('Fehler beim Speichern ⚠'); }
+  if (!S || !uid) return;
+  const id = uid;
+  try { await api('/users/' + id, { method: 'PUT', body: JSON.stringify(S) }); pending = false; status('Gespeichert ✓'); }
+  catch (e) {
+    if (e.status === 401) { authFail(id); toast('Bitte neu anmelden – die letzte Änderung wurde nicht gespeichert'); }
+    else status('Fehler beim Speichern ⚠');
+  }
 }
-function save() { pending = true; status('Speichert…'); clearTimeout(timer); timer = setTimeout(doSave, 500); }
-async function flush() { if (pending) { clearTimeout(timer); await doSave(); } }
+function save() { pending = true; status('Speichert…'); clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 500); }
+async function flush() { if (pending) { clearTimeout(saveTimer); await doSave(); } }
 
 function ensure() {
-  S.days = S.days || []; S.history = S.history || []; S.sessions = S.sessions || {};
+  S.days = S.days || []; S.history = S.history || []; S.sessions = S.sessions || {}; S.custom = S.custom || [];
+  S.settings = Object.assign({ rest: 90, auto: true, sound: true, vibrate: true }, S.settings || {});
 }
-async function loadUser(id) {
-  await flush();
-  uid = id; localStorage.setItem('uid', id); S = null; render();
-  S = await api('/users/' + id); ensure();
-  curDay = null; histEx = null; render();
-}
-async function init() {
-  users = await api('/users');
-  if (users.length) {
-    const saved = localStorage.getItem('uid');
-    await loadUser(users.find((u) => u.id === saved) ? saved : users[0].id);
-  } else render();
+function authFail(id) {
+  pending = false; clearTimeout(saveTimer);
+  if (auth.trainer) { auth.trainer = null; if (tab === 'over') tab = 'train'; toast('Trainer-Sitzung abgelaufen'); }
+  else delete auth.tokens[id];
+  saveAuth(); S = null; stopRest(); loginFor = id || uid || (users[0] && users[0].id) || null; closeModal(); render();
 }
 
+/* ---------- Personen / Anmeldung ---------- */
+async function refreshUsers() { users = await api('/users'); }
+async function loadUser(id) {
+  await flush();
+  uid = id; try { localStorage.setItem('uid', id); } catch {}
+  S = null; loginFor = null; stopRest();
+  if (!auth.trainer && !auth.tokens[id]) { loginFor = id; render(); return; }
+  render();
+  try { S = await api('/users/' + id); ensure(); curDay = null; histEx = null; render(); }
+  catch (e) { if (e.status === 401) authFail(id); else { toast(e.message); render(); } }
+}
+async function init() {
+  try { lib = await (await fetch('/library.json')).json(); } catch {}
+  if (auth.trainer) { try { await api('/session'); tab = 'over'; } catch { auth.trainer = null; saveAuth(); } }
+  await refreshUsers();
+  let saved = null; try { saved = localStorage.getItem('uid'); } catch {}
+  if (!users.length) { render(); return; }
+  const known = users.find((u) => u.id === saved);
+  if (auth.trainer) { render(); if (known) await loadUser(saved); return; }
+  await loadUser(known ? saved : users[0].id);
+}
+
+/* ---------- Hilfen ---------- */
 const findDay = (id) => S.days.find((d) => d.id === id);
 const findEx = (dayId, exId) => findDay(dayId).exercises.find((e) => e.id === exId);
 const sess = (day) => (S.sessions[day.id] ||= { sets: {}, weight: {}, reps: {} });
@@ -116,10 +177,114 @@ const padSets = (arr, n) => { arr = arr || []; while (arr.length < n) arr.push(f
 const move = (arr, i, dir) => { const j = i + dir; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; };
 function lastOf(name) {
   for (let i = S.history.length - 1; i >= 0; i--) {
-    const it = S.history[i].items.find((x) => x.name.toLowerCase() === name.toLowerCase());
+    const it = S.history[i].items.find((x) => norm(x.name) === norm(name));
     if (it) return { ...it, date: S.history[i].date };
   }
   return null;
+}
+const allEx = () => [...lib.exercises.map((e) => ({ ...e, builtin: true })), ...((S && S.custom) || []).map((e) => ({ ...e, builtin: false }))];
+const findLib = (name) => { const n = norm(name); return allEx().find((e) => norm(e.name) === n || (e.aliases || []).some((a) => norm(a) === n)); };
+
+/* ---------- Pausentimer ---------- */
+const rest = { end: 0, total: 0, iv: null, lock: null };
+let actx = null;
+function unlockAudio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch {} }
+function beep(t0, f, d) {
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = 'sine'; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.4, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+  o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0 + d + 0.05);
+}
+function alarm() {
+  if (!S) return;
+  try { if (S.settings.sound && actx) { const t = actx.currentTime; beep(t, 880, 0.25); beep(t + 0.35, 880, 0.25); beep(t + 0.7, 1175, 0.45); } } catch {}
+  try { if (S.settings.vibrate && navigator.vibrate) navigator.vibrate([250, 120, 250, 120, 400]); } catch {}
+}
+async function keepAwake(on) {
+  try {
+    if (on && navigator.wakeLock && !rest.lock) { rest.lock = await navigator.wakeLock.request('screen'); rest.lock.addEventListener('release', () => { rest.lock = null; }); }
+    if (!on && rest.lock) { await rest.lock.release(); rest.lock = null; }
+  } catch {}
+}
+function renderRest() {
+  const el = $('#timer');
+  if (!rest.end) { el.className = ''; el.innerHTML = ''; document.title = BASE_TITLE; return; }
+  el.className = 'on';
+  el.innerHTML = '<div class="tbox" role="timer"><div class="tt" id="tt"></div><div class="tbar"><div id="tfill"></div></div>' +
+    '<button class="tbtn" data-a="tstep" data-s="-15">−15</button><button class="tbtn" data-a="tstep" data-s="15">+15</button><button class="tbtn" data-a="tstop">Skip</button></div>';
+  updateRest();
+}
+function updateRest() {
+  const left = Math.max(0, Math.ceil((rest.end - Date.now()) / 1000));
+  const tt = $('#tt'); if (tt) tt.textContent = fmtT(left);
+  const f = $('#tfill'); if (f) f.style.width = Math.min(100, Math.round(left / Math.max(rest.total, left, 1) * 100)) + '%';
+  document.title = '⏱ ' + fmtT(left) + ' · ' + BASE_TITLE;
+}
+function startRest(sec) {
+  rest.total = sec; rest.end = Date.now() + sec * 1000;
+  if (!rest.iv) rest.iv = setInterval(tickRest, 250);
+  renderRest(); keepAwake(true);
+}
+function tickRest() { if (Date.now() >= rest.end) { stopRest(); alarm(); toast('Pause vorbei – weiter geht’s 💪'); } else updateRest(); }
+function stopRest() { clearInterval(rest.iv); rest.iv = null; rest.end = 0; renderRest(); keepAwake(false); }
+function adjustRest(s) {
+  rest.end += s * 1000;
+  if (rest.end <= Date.now()) { stopRest(); return; }
+  rest.total = Math.max(rest.total, Math.ceil((rest.end - Date.now()) / 1000)); updateRest();
+}
+
+/* ---------- Modal ---------- */
+function openModal(html) { $('#sheet').innerHTML = html; $('#modal').hidden = false; const i = $('#sheet input,#sheet textarea'); if (i) i.focus(); }
+function closeModal() { $('#modal').hidden = true; $('#sheet').innerHTML = ''; }
+const modalBtns = (okA, okLabel, extra = '') => `<div class="row" style="margin:14px 0 0"><button class="btn grow" data-a="closeModal">Abbrechen</button><button class="btn primary grow" data-a="${okA}" ${extra}>${okLabel}</button></div>`;
+
+function newUserModal() {
+  openModal(`<h2>Neue Person</h2><div class="stack">
+    <input id="nuName" placeholder="Name" maxlength="40" autocomplete="off">
+    <input id="nuPin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN (4–8 Ziffern)" autocomplete="new-password">
+    <input id="nuPin2" type="password" inputmode="numeric" maxlength="8" placeholder="PIN wiederholen" autocomplete="new-password"></div>${modalBtns('createUser', 'Anlegen')}`);
+}
+function trainerModal() {
+  openModal(`<h2>Trainer-Zugang</h2><p class="muted small">Mit der Trainer-PIN siehst und bearbeitest du alle Pläne.</p><div class="stack">
+    <input id="trPin" type="password" placeholder="Trainer-PIN" autocomplete="current-password"></div>${modalBtns('doTrainer', 'Anmelden')}`);
+}
+function pinModal(id, name) {
+  const t = !!auth.trainer;
+  openModal(`<h2>${t ? 'PIN setzen für ' + esc(name) : 'PIN ändern'}</h2><div class="stack">
+    ${t ? '' : '<input id="pinOld" type="password" inputmode="numeric" maxlength="8" placeholder="Aktuelle PIN" autocomplete="current-password">'}
+    <input id="pinNew" type="password" inputmode="numeric" maxlength="8" placeholder="Neue PIN (4–8 Ziffern)" autocomplete="new-password">
+    <input id="pinNew2" type="password" inputmode="numeric" maxlength="8" placeholder="Neue PIN wiederholen" autocomplete="new-password"></div>${modalBtns('savePin', 'Speichern', `data-id="${esc(id)}"`)}`);
+}
+function customModal() {
+  openModal(`<h2>Eigene Übung</h2><div class="stack">
+    <input id="cName" placeholder="Name der Übung" maxlength="60">
+    <select id="cMuscle">${lib.muscles.map((m) => `<option>${esc(m)}</option>`).join('')}</select>
+    <select id="cEquip">${lib.equipment.map((m) => `<option>${esc(m)}</option>`).join('')}</select>
+    <textarea id="cSteps" placeholder="Ausführung (ein Schritt pro Zeile, optional)"></textarea></div>${modalBtns('saveCustom', 'Speichern')}`);
+}
+function exModal(name) {
+  const e = findLib(name); if (!e) return;
+  const last = lastOf(e.name);
+  const add = S.days.length
+    ? `<div class="row" style="margin:0"><select id="addDay">${S.days.map((d) => `<option value="${d.id}" ${d.id === curDay ? 'selected' : ''}>${esc(d.name)}</option>`).join('')}</select><button class="btn primary" data-a="addToPlan" data-name="${esc(e.name)}">Zum Plan</button></div>`
+    : '<p class="muted small" style="margin:0">Lege zuerst im Tab „Plan“ einen Trainingstag an.</p>';
+  openModal(`<div class="row"><h2 class="grow" style="margin:0">${esc(e.name)}</h2><button class="ic" data-a="closeModal" aria-label="Schließen">✕</button></div>
+    <div style="margin:4px 0 8px"><span class="badge">${esc(e.muscle)}</span>${(e.secondary || []).map((s) => `<span class="badge">${esc(s)}</span>`).join('')}<span class="badge">${esc(e.equipment)}</span>${e.level ? `<span class="badge">${esc(e.level)}</span>` : ''}</div>
+    ${last ? `<p class="muted small">Dein letzter Stand: ${last.weight} kg × ${esc(last.reps)} (${fmtDate(last.date)})</p>` : ''}
+    ${e.steps && e.steps.length ? `<h2 style="font-size:16px">Ausführung</h2><ol class="steps">${e.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
+    ${e.tips && e.tips.length ? `<h2 style="font-size:16px">Tipps</h2><ul class="plain">${e.tips.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}
+    <div class="card" style="margin:14px 0 10px">${add}</div>
+    ${e.builtin ? '' : `<button class="btn danger block" data-a="delCustom" data-name="${esc(e.name)}">Eigene Übung löschen</button>`}
+    <p class="muted small" style="margin-top:12px">Allgemeine Hinweise, keine individuelle Trainings- oder Medizinberatung. Bei Schmerzen die Übung abbrechen.</p>`);
+}
+
+/* ---------- Ansichten ---------- */
+function viewLogin() {
+  return `<div class="card"><h2>Anmelden</h2><div class="stack">
+    <select id="loginUser" aria-label="Person">${users.map((u) => `<option value="${esc(u.id)}" ${u.id === loginFor ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</select>
+    <input id="loginPin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN" autocomplete="current-password">
+    <button class="btn primary block" data-a="login">Anmelden</button></div>
+    <div class="row" style="margin:12px 0 0"><button class="btn grow" data-a="newUser">Neue Person</button><button class="btn grow" data-a="trainerLogin">Trainer-Zugang</button></div></div>`;
 }
 
 function viewTrain() {
@@ -132,8 +297,9 @@ function viewTrain() {
     total += arr.length; done += arr.filter(Boolean).length;
     const last = lastOf(ex.name);
     const w = ss.weight[ex.id] ?? ex.weight, r = ss.reps[ex.id] ?? ex.reps;
+    const info = findLib(ex.name) ? `<button class="ic info" data-a="exinfo" data-name="${esc(ex.name)}" aria-label="Übungsinfo">ℹ︎</button>` : '';
     return `<div class="card">
-      <div class="exname">${esc(ex.name)}</div>
+      <div class="nameline"><div class="exname">${esc(ex.name)}</div>${info}</div>
       <div class="muted small">Ziel: ${ex.sets} × ${esc(ex.reps)}${last ? ` · Zuletzt: ${last.weight} kg × ${esc(last.reps)} (${fmtDate(last.date)})` : ''}</div>
       <div class="sets">${arr.map((on, i) => `<button class="set ${on ? 'on' : ''}" data-a="set" data-ex="${ex.id}" data-i="${i}" aria-label="Satz ${i + 1}">${i + 1}</button>`).join('')}</div>
       <div class="fields">
@@ -143,13 +309,16 @@ function viewTrain() {
       ${ex.note ? `<div class="muted small" style="margin-top:8px">📝 ${esc(ex.note)}</div>` : ''}
     </div>`;
   }).join('');
-  return `<div class="chips">${S.days.map((d) => `<button class="chip ${d.id === curDay ? 'on' : ''}" data-a="day" data-day="${d.id}">${esc(d.name)}</button>`).join('')}</div>
+  return `${auth.trainer ? `<div class="muted small" style="margin-bottom:8px">👁 Trainer-Ansicht: ${esc(S.name)}</div>` : ''}
+    <div class="chips">${S.days.map((d) => `<button class="chip ${d.id === curDay ? 'on' : ''}" data-a="day" data-day="${d.id}">${esc(d.name)}</button>`).join('')}</div>
     <div class="bar"><div style="width:${total ? Math.round(done / total * 100) : 0}%"></div></div>
+    <div class="chips"><span class="muted small" style="align-self:center">⏱ Pause</span>${[60, 90, 120, 180].map((s) => `<button class="chip" data-a="rest" data-s="${s}">${fmtT(s)}</button>`).join('')}</div>
     ${cards || '<div class="card muted">Dieser Tag hat noch keine Übungen.</div>'}
     <div class="sticky"><button class="btn primary block" data-a="finish">Training abschließen (${done}/${total} Sätze)</button></div>`;
 }
 
 function viewPlan() {
+  const names = [...new Set(allEx().map((e) => e.name))];
   const days = S.days.map((d) => `<div class="card">
     <div class="row">
       <input class="grow title" data-f="dayName" data-day="${d.id}" value="${esc(d.name)}" aria-label="Name des Trainingstags">
@@ -158,11 +327,12 @@ function viewPlan() {
       <button class="ic danger" data-a="delDay" data-day="${d.id}" title="Tag löschen">🗑</button>
     </div>
     ${d.exercises.map((x) => `<div class="exrow">
-      <input class="name" data-f="ex.name" data-day="${d.id}" data-ex="${x.id}" value="${esc(x.name)}" aria-label="Übung">
+      <input class="name" list="exlist" data-f="ex.name" data-day="${d.id}" data-ex="${x.id}" value="${esc(x.name)}" aria-label="Übung">
       <div class="nums">
         <label>Sätze<input type="number" inputmode="numeric" min="1" max="10" data-f="ex.sets" data-day="${d.id}" data-ex="${x.id}" value="${x.sets}"></label>
         <label>Wdh.<input type="text" data-f="ex.reps" data-day="${d.id}" data-ex="${x.id}" value="${esc(x.reps)}"></label>
         <label>kg<input type="number" inputmode="decimal" step="0.5" data-f="ex.weight" data-day="${d.id}" data-ex="${x.id}" value="${x.weight}"></label>
+        <label>Pause (s)<input type="number" inputmode="numeric" min="0" max="900" placeholder="${S.settings.rest}" data-f="ex.rest" data-day="${d.id}" data-ex="${x.id}" value="${x.rest || ''}"></label>
         <button class="ic" data-a="moveEx" data-day="${d.id}" data-ex="${x.id}" data-dir="-1">↑</button>
         <button class="ic" data-a="moveEx" data-day="${d.id}" data-ex="${x.id}" data-dir="1">↓</button>
         <button class="ic danger" data-a="delEx" data-day="${d.id}" data-ex="${x.id}">✕</button>
@@ -171,12 +341,41 @@ function viewPlan() {
     </div>`).join('')}
     <button class="btn block" style="margin-top:10px" data-a="addEx" data-day="${d.id}">＋ Übung</button>
   </div>`).join('');
-  return days + `<button class="btn block" data-a="addDay">＋ Trainingstag</button>
-    <div class="card" style="margin-top:14px">
-      <h2>Profil</h2>
+  return `<datalist id="exlist">${names.map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>${days}
+    <button class="btn block" data-a="addDay">＋ Trainingstag</button>
+    <div class="card" style="margin-top:14px"><h2>Pausentimer</h2>
+      <div class="nums"><label>Standard-Pause (Sekunden)<input type="number" inputmode="numeric" min="10" max="900" step="5" data-f="set.rest" value="${S.settings.rest}"></label></div>
+      <label class="check"><input type="checkbox" data-f="set.auto" ${S.settings.auto ? 'checked' : ''}> Timer nach jedem abgehakten Satz automatisch starten</label>
+      <label class="check"><input type="checkbox" data-f="set.sound" ${S.settings.sound ? 'checked' : ''}> Signalton am Ende</label>
+      <label class="check"><input type="checkbox" data-f="set.vibrate" ${S.settings.vibrate ? 'checked' : ''}> Vibration am Ende</label>
+    </div>
+    <div class="card"><h2>Profil</h2>
       <div class="row"><input class="grow" data-f="userName" value="${esc(S.name)}" aria-label="Name"></div>
-      <div class="row"><button class="btn grow" data-a="export">Daten exportieren</button><button class="btn danger grow" data-a="delUser">Person löschen</button></div>
+      <div class="row"><button class="btn grow" data-a="pinFor" data-id="${esc(uid)}" data-name="${esc(S.name)}">${auth.trainer ? 'PIN setzen' : 'PIN ändern'}</button><button class="btn grow" data-a="export">Exportieren</button></div>
+      <button class="btn danger block" data-a="delUser">Person löschen</button>
     </div>`;
+}
+
+function libItems() {
+  const q = norm(libF.q);
+  return allEx()
+    .filter((e) => (!libF.muscle || e.muscle === libF.muscle) && (!libF.equip || e.equipment === libF.equip) &&
+      (!q || norm(e.name + ' ' + (e.aliases || []).join(' ')).includes(q)))
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+function libListHTML() {
+  const items = libItems();
+  if (!items.length) return '<div class="card muted">Keine Übung gefunden.</div>';
+  return items.map((e) => `<div class="card libcard" data-a="exinfo" data-name="${esc(e.name)}"><div>
+    <div class="exname">${esc(e.name)}${e.builtin ? '' : ' <span class="badge">Eigene</span>'}</div>
+    <div class="muted small">${esc(e.muscle)} · ${esc(e.equipment)}</div></div><span class="muted">›</span></div>`).join('');
+}
+function viewLib() {
+  const chip = (k, v, label) => `<button class="chip ${libF[k] === v ? 'on' : ''}" data-a="lf" data-k="${k}" data-v="${esc(v)}">${esc(label)}</button>`;
+  return `<div class="row"><input class="grow" type="search" placeholder="Übung suchen…" data-f="libQ" value="${esc(libF.q)}"><button class="btn" data-a="customEx">＋ Eigene</button></div>
+    <div class="chips">${chip('muscle', '', 'Alle')}${lib.muscles.map((m) => chip('muscle', m, m)).join('')}</div>
+    <div class="chips">${chip('equip', '', 'Alle Geräte')}${lib.equipment.map((m) => chip('equip', m, m)).join('')}</div>
+    <div id="libList">${libListHTML()}</div>`;
 }
 
 function chart(name) {
@@ -194,10 +393,9 @@ function chart(name) {
     <text x="2" y="${y(max) + 4}">${max} kg</text><text x="2" y="${y(min) + 4}">${min} kg</text>
     <text x="${P}" y="${H - 8}">${fmtDate(pts[0].t)}</text><text x="${W - P}" y="${H - 8}" text-anchor="end">${fmtDate(pts[pts.length - 1].t)}</text></svg>`;
 }
-
 function viewHist() {
   const names = [...new Set(S.history.flatMap((h) => h.items.map((i) => i.name)))].sort((a, b) => a.localeCompare(b, 'de'));
-  if (!names.length) return '<div class="card muted">Noch keine abgeschlossenen Trainings. Schließe im Tab „Training“ eine Einheit ab, dann erscheint hier dein Verlauf.</div>';
+  if (!names.length) return '<div class="card muted">Noch keine abgeschlossenen Trainings. Schließe im Tab „Training“ eine Einheit ab, dann erscheint hier der Verlauf.</div>';
   if (!names.includes(histEx)) histEx = names[0];
   const list = [...S.history].reverse().map((h) => `<div class="card"><div class="hist-item"><div>
       <b>${esc(h.day)}</b> <span class="muted small">${fmtDate(h.date, true)}</span>
@@ -208,23 +406,39 @@ function viewHist() {
     ${chart(histEx)}</div><h2 style="margin:16px 0 8px">Einheiten</h2>${list}`;
 }
 
+function viewOver() {
+  return `<div class="card"><h2>Alle Personen</h2>${users.length ? users.map((u) => `<div class="exrow"><div class="row" style="margin:0">
+      <div class="grow"><b>${esc(u.name)}</b><div class="muted small">${u.sessions ?? 0} Einheiten${u.last ? ' · zuletzt ' + fmtDate(u.last, true) : ''}</div></div>
+      <button class="btn" data-a="openUser" data-id="${esc(u.id)}">Öffnen</button>
+      <button class="ic" data-a="pinFor" data-id="${esc(u.id)}" data-name="${esc(u.name)}" title="PIN setzen" aria-label="PIN setzen">🔑</button>
+      <button class="ic danger" data-a="delUserId" data-id="${esc(u.id)}" data-name="${esc(u.name)}" title="Person löschen" aria-label="Person löschen">🗑</button></div></div>`).join('') : '<p class="muted">Noch keine Personen.</p>'}</div>
+    <button class="btn block" data-a="newUser">＋ Person anlegen</button>`;
+}
+
+function renderBar() {
+  const tr = !!auth.trainer, loggedIn = tr || (S && !loginFor);
+  $('#role').innerHTML = tr ? '<span class="badge trainer">Trainer</span>' : '';
+  const ub = loggedIn && users.length
+    ? `<select id="userSel" aria-label="Person">${users.map((u) => `<option value="${esc(u.id)}" ${u.id === uid ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</select>${tr ? '<button class="ic" data-a="newUser" title="Person hinzufügen">＋</button>' : ''}<button class="ic" data-a="logout" title="Abmelden" aria-label="Abmelden">⎋</button>`
+    : '';
+  $('#userbar').innerHTML = ub; $('#userbar').style.display = ub ? '' : 'none';
+  const tabs = [['train', 'Training'], ['plan', 'Plan'], ['lib', 'Bibliothek'], ['hist', 'Verlauf']];
+  if (tr) tabs.unshift(['over', 'Übersicht']);
+  $('#tabs').innerHTML = loggedIn ? tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-a="tab" data-tab="${k}">${l}</button>`).join('') : '';
+  document.body.dataset.tab = tab;
+}
 function render() {
+  if (tab === 'over' && !auth.trainer) tab = 'train';
+  renderBar();
   const app = $('#app');
-  $('#userSel').innerHTML = users.map((u) => `<option value="${esc(u.id)}" ${u.id === uid ? 'selected' : ''}>${esc(u.name)}</option>`).join('');
-  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === tab));
   if (!users.length) { app.innerHTML = '<div class="card"><h2>Willkommen 👋</h2><p class="muted">Lege die erste Person an, um loszulegen.</p><button class="btn primary" data-a="newUser">Person anlegen</button></div>'; return; }
-  if (!S) { app.innerHTML = '<p class="muted">Lade…</p>'; return; }
-  app.innerHTML = tab === 'train' ? viewTrain() : tab === 'plan' ? viewPlan() : viewHist();
+  if (loginFor && !auth.trainer) { app.innerHTML = viewLogin(); return; }
+  if (tab === 'over' && auth.trainer) { app.innerHTML = viewOver(); return; }
+  if (!S) { app.innerHTML = auth.trainer ? '<div class="card muted">Wähle oben eine Person oder öffne sie in der Übersicht.</div>' : '<p class="muted">Lade…</p>'; return; }
+  app.innerHTML = tab === 'train' ? viewTrain() : tab === 'plan' ? viewPlan() : tab === 'lib' ? viewLib() : viewHist();
 }
 
-async function newUser() {
-  const name = (prompt('Name der neuen Person:') || '').trim();
-  if (!name) return;
-  const u = await api('/users', { method: 'POST', body: JSON.stringify({ name }) });
-  users = await api('/users');
-  await loadUser(u.id);
-}
-
+/* ---------- Aktionen ---------- */
 function finish() {
   const day = findDay(curDay), ss = sess(day), items = [];
   day.exercises.forEach((ex) => {
@@ -237,59 +451,153 @@ function finish() {
   if (!items.length) { toast('Noch keine Sätze abgehakt'); return; }
   S.history.push({ id: rid(), date: new Date().toISOString(), day: day.name, items });
   delete S.sessions[day.id];
-  save(); render(); toast('Training gespeichert 💪');
+  stopRest(); save(); render(); toast('Training gespeichert 💪');
 }
 
-document.addEventListener('click', async (e) => {
-  const el = e.target.closest('[data-a]'); if (!el) return;
-  const a = el.dataset.a, d = el.dataset;
-  try {
-    if (a === 'tab') { tab = d.tab; render(); return; }
-    if (a === 'day') { curDay = d.day; render(); return; }
-    if (a === 'newUser') return newUser();
-    if (a === 'finish') return finish();
-    if (a === 'set') { const ss = sess(findDay(curDay)); ss.sets[d.ex][+d.i] = !ss.sets[d.ex][+d.i]; }
-    else if (a === 'addDay') S.days.push({ id: rid(), name: 'Neuer Tag', exercises: [] });
-    else if (a === 'delDay') { if (!confirm('Diesen Trainingstag samt Übungen löschen?')) return; S.days = S.days.filter((x) => x.id !== d.day); delete S.sessions[d.day]; }
-    else if (a === 'moveDay') move(S.days, S.days.findIndex((x) => x.id === d.day), +d.dir);
-    else if (a === 'addEx') findDay(d.day).exercises.push({ id: rid(), name: 'Neue Übung', sets: 3, reps: '10', weight: 0, note: '' });
-    else if (a === 'delEx') { const day = findDay(d.day); day.exercises = day.exercises.filter((x) => x.id !== d.ex); }
-    else if (a === 'moveEx') { const day = findDay(d.day); move(day.exercises, day.exercises.findIndex((x) => x.id === d.ex), +d.dir); }
-    else if (a === 'delSession') { if (!confirm('Diesen Eintrag löschen?')) return; S.history = S.history.filter((h) => h.id !== d.id); }
-    else if (a === 'delUser') {
-      if (!confirm(`„${S.name}“ und alle Daten endgültig löschen?`)) return;
-      pending = false; clearTimeout(timer);
-      await api('/users/' + uid, { method: 'DELETE' });
-      users = await api('/users'); S = null; uid = null;
-      if (users.length) await loadUser(users[0].id); else render();
-      return;
+async function deleteUser(id) {
+  pending = false; clearTimeout(saveTimer);
+  await api('/users/' + id, { method: 'DELETE' });
+  delete auth.tokens[id]; saveAuth();
+  await refreshUsers();
+  if (uid === id) { S = null; uid = null; if (users.length) await loadUser(users[0].id); else render(); } else render();
+}
+
+async function act(a, d) {
+  switch (a) {
+    case 'tab': tab = d.tab; if (tab === 'over') await refreshUsers(); render(); return;
+    case 'day': curDay = d.day; render(); return;
+    case 'rest': unlockAudio(); startRest(+d.s); return;
+    case 'tstep': adjustRest(+d.s); return;
+    case 'tstop': stopRest(); return;
+    case 'finish': return finish();
+    case 'closeModal': return closeModal();
+
+    case 'newUser': return newUserModal();
+    case 'createUser': {
+      const name = $('#nuName').value.trim(), p1 = $('#nuPin').value.trim(), p2 = $('#nuPin2').value.trim();
+      if (!name) return toast('Bitte einen Namen eingeben');
+      if (!PIN_RE.test(p1)) return toast('Die PIN muss aus 4–8 Ziffern bestehen');
+      if (p1 !== p2) return toast('Die PINs stimmen nicht überein');
+      const r = await api('/users', { method: 'POST', body: JSON.stringify({ name, pin: p1 }) });
+      auth.tokens[r.id] = r.token; saveAuth(); closeModal();
+      await refreshUsers(); await loadUser(r.id); return;
     }
-    else if (a === 'export') {
+    case 'login': {
+      const id = $('#loginUser').value, pin = $('#loginPin').value.trim();
+      if (!id || !pin) return toast('Bitte Person und PIN eingeben');
+      const r = await api('/login', { method: 'POST', body: JSON.stringify({ id, pin }) });
+      auth.tokens[id] = r.token; saveAuth(); if (r.pinSet) toast('Deine PIN wurde gesetzt');
+      await loadUser(id); return;
+    }
+    case 'trainerLogin': return trainerModal();
+    case 'doTrainer': {
+      const r = await api('/trainer/login', { method: 'POST', body: JSON.stringify({ pin: $('#trPin').value }) });
+      auth.trainer = r.token; saveAuth(); closeModal(); loginFor = null; tab = 'over';
+      await refreshUsers(); render(); return;
+    }
+    case 'logout': {
+      await flush();
+      if (auth.trainer) {
+        auth.trainer = null; saveAuth(); if (tab === 'over') tab = 'train';
+        if (!(uid && auth.tokens[uid])) { S = null; loginFor = uid || (users[0] && users[0].id) || null; }
+        await refreshUsers();
+      } else { delete auth.tokens[uid]; saveAuth(); S = null; loginFor = uid || (users[0] && users[0].id) || null; }
+      stopRest(); render(); return;
+    }
+    case 'openUser': tab = 'train'; await loadUser(d.id); return;
+    case 'pinFor': return pinModal(d.id, d.name);
+    case 'savePin': {
+      const p1 = $('#pinNew').value.trim(), p2 = $('#pinNew2').value.trim(), old = $('#pinOld') ? $('#pinOld').value.trim() : '';
+      if (!PIN_RE.test(p1)) return toast('Die PIN muss aus 4–8 Ziffern bestehen');
+      if (p1 !== p2) return toast('Die PINs stimmen nicht überein');
+      const r = await api('/users/' + d.id + '/pin', { method: 'POST', body: JSON.stringify({ pin: p1, old }) });
+      if (r.token && !auth.trainer) { auth.tokens[d.id] = r.token; saveAuth(); }
+      closeModal(); toast('PIN gespeichert'); return;
+    }
+    case 'delUserId': if (!confirm(`„${d.name}“ und alle Daten endgültig löschen?`)) return; return deleteUser(d.id);
+    case 'delUser': if (!confirm(`„${S.name}“ und alle Daten endgültig löschen?`)) return; return deleteUser(uid);
+    case 'export': {
       const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
       const l = document.createElement('a'); l.href = URL.createObjectURL(blob); l.download = `trainingsplan-${uid}.json`; l.click();
       return;
     }
-    save(); render();
-  } catch (err) { toast('Fehler: ' + err.message); }
+
+    case 'exinfo': return exModal(d.name);
+    case 'lf': libF[d.k] = libF[d.k] === d.v ? '' : d.v; render(); return;
+    case 'customEx': return customModal();
+    case 'saveCustom': {
+      const name = $('#cName').value.trim();
+      if (!name) return toast('Bitte einen Namen eingeben');
+      if (findLib(name)) return toast('Diese Übung gibt es schon');
+      const steps = $('#cSteps').value.split('\n').map((s) => s.trim()).filter(Boolean);
+      S.custom.push({ id: rid(), name, muscle: $('#cMuscle').value, equipment: $('#cEquip').value, secondary: [], steps, tips: [] });
+      closeModal(); break;
+    }
+    case 'delCustom': {
+      if (!confirm('Diese eigene Übung löschen?')) return;
+      S.custom = S.custom.filter((e) => norm(e.name) !== norm(d.name)); closeModal(); break;
+    }
+    case 'addToPlan': {
+      const day = findDay($('#addDay').value), e = findLib(d.name), last = lastOf(e.name);
+      day.exercises.push({ id: rid(), name: e.name, sets: 3, reps: '10', weight: last ? last.weight : 0, note: '' });
+      closeModal(); toast(`„${e.name}“ zu „${day.name}“ hinzugefügt`); break;
+    }
+
+    case 'set': {
+      const day = findDay(curDay), ss = sess(day), i = +d.i, was = ss.sets[d.ex][i];
+      ss.sets[d.ex][i] = !was;
+      if (!was) {
+        unlockAudio();
+        const all = day.exercises.every((ex) => padSets(ss.sets[ex.id], ex.sets).every(Boolean));
+        if (S.settings.auto && !all) startRest(findEx(day.id, d.ex).rest || S.settings.rest);
+      }
+      break;
+    }
+    case 'addDay': S.days.push({ id: rid(), name: 'Neuer Tag', exercises: [] }); break;
+    case 'delDay': if (!confirm('Diesen Trainingstag samt Übungen löschen?')) return; S.days = S.days.filter((x) => x.id !== d.day); delete S.sessions[d.day]; break;
+    case 'moveDay': move(S.days, S.days.findIndex((x) => x.id === d.day), +d.dir); break;
+    case 'addEx': findDay(d.day).exercises.push({ id: rid(), name: 'Neue Übung', sets: 3, reps: '10', weight: 0, note: '' }); break;
+    case 'delEx': { const day = findDay(d.day); day.exercises = day.exercises.filter((x) => x.id !== d.ex); break; }
+    case 'moveEx': { const day = findDay(d.day); move(day.exercises, day.exercises.findIndex((x) => x.id === d.ex), +d.dir); break; }
+    case 'delSession': if (!confirm('Diesen Eintrag löschen?')) return; S.history = S.history.filter((h) => h.id !== d.id); break;
+    default: return;
+  }
+  save(); render();
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'modal') { closeModal(); return; }
+  const el = e.target.closest('[data-a]'); if (!el) return;
+  act(el.dataset.a, el.dataset).catch((err) => {
+    if (err.status === 401 && !['login', 'doTrainer', 'savePin'].includes(el.dataset.a)) { authFail(uid); return; }
+    toast(err.message);
+  });
 });
 
 document.addEventListener('input', (e) => {
   const el = e.target, f = el.dataset.f, d = el.dataset, v = el.value;
-  if (!f || f === 'userName' || f === 'histEx') return;
+  if (!f || f === 'userName' || f === 'histEx' || el.type === 'checkbox') return;
+  if (f === 'libQ') { libF.q = v; $('#libList').innerHTML = libListHTML(); return; }
   if (f === 'dayName') findDay(d.day).name = v;
   else if (f.startsWith('ex.')) {
     const k = f.slice(3), ex = findEx(d.day, d.ex);
-    ex[k] = k === 'sets' ? Math.max(1, Math.min(10, parseInt(v) || 1)) : k === 'weight' ? num(v) : v;
+    ex[k] = k === 'sets' ? Math.max(1, Math.min(10, parseInt(v) || 1))
+      : k === 'weight' ? num(v)
+      : k === 'rest' ? Math.max(0, Math.min(900, parseInt(v) || 0))
+      : v;
   }
+  else if (f === 'set.rest') S.settings.rest = Math.max(10, Math.min(900, parseInt(v) || 90));
   else if (f === 'sw') sess(findDay(curDay)).weight[d.ex] = v;
   else if (f === 'sr') sess(findDay(curDay)).reps[d.ex] = v;
+  else return;
   save();
 });
 
 document.addEventListener('change', async (e) => {
   const el = e.target, f = el.dataset.f;
   if (el.id === 'userSel') { await loadUser(el.value); return; }
-  if (f === 'histEx') { histEx = el.value; render(); }
+  if (f === 'histEx') { histEx = el.value; render(); return; }
+  if (f && f.startsWith('set.') && el.type === 'checkbox') { S.settings[f.slice(4)] = el.checked; save(); return; }
   if (f === 'userName') {
     const name = el.value.trim(); if (!name) { el.value = S.name; return; }
     S.name = name; const u = users.find((x) => x.id === uid); if (u) u.name = name;
@@ -297,8 +605,15 @@ document.addEventListener('change', async (e) => {
   }
 });
 
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('#modal').hidden) { closeModal(); return; }
+  if (e.key !== 'Enter') return;
+  if (e.target.id === 'loginPin') { act('login', {}).catch((err) => toast(err.message)); return; }
+  if (e.target.tagName === 'INPUT' && e.target.closest('#sheet')) { const b = $('#sheet .primary'); if (b) { e.preventDefault(); b.click(); } }
+});
+
 document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState !== 'visible' || !uid || pending || document.activeElement?.dataset?.f) return;
+  if (document.visibilityState !== 'visible' || !uid || !S || pending || document.activeElement?.dataset?.f || !$('#modal').hidden) return;
   try { S = await api('/users/' + uid); ensure(); render(); } catch {}
 });
 

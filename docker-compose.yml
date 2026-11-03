@@ -2,8 +2,9 @@
 #
 # Vorbereitung:
 #   1. Ordner anlegen:  /mnt/user/appdata/trainingsplan/app
-#   2. Dort server.js und index.html ablegen
-#   3. Stack mit dieser Datei starten, danach erreichbar unter http://<UNRAID-IP>:8085
+#   2. Dort server.js, index.html und library.json ablegen
+#   3. TRAINER_PIN unten ändern
+#   4. Stack mit dieser Datei starten, danach erreichbar unter http://<UNRAID-IP>:8085
 #
 # Die Daten (eine JSON-Datei pro Person) liegen unter
 # /mnt/user/appdata/trainingsplan/data und bleiben bei Updates erhalten.
@@ -20,6 +21,7 @@ services:
       - TZ=Europe/Berlin
       - PORT=3000
       - DATA_DIR=/data
+      - TRAINER_PIN=123456    # BITTE ÄNDERN: Zugang des Trainers zu allen Plänen
     ports:
       - "8085:3000"           # Host-Port links bei Bedarf ändern
     volumes:
