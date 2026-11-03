@@ -1,371 +1,1022 @@
 {
-  "muscles": ["Brust", "Rücken", "Schultern", "Bizeps", "Trizeps", "Beine", "Gesäß", "Bauch", "Waden"],
-  "equipment": ["Langhantel", "Kurzhantel", "Kabel", "Maschine", "Körpergewicht"],
-  "exercises": [
-    {
-      "name": "Bankdrücken", "muscle": "Brust", "secondary": ["Trizeps", "Schultern"], "equipment": "Langhantel", "level": "Fortgeschritten",
-      "steps": [
-        "Flach auf die Bank legen, Füße fest am Boden, Schulterblätter zusammen- und nach unten ziehen.",
-        "Stange etwas mehr als schulterbreit greifen und aus dem Rack heben.",
-        "Kontrolliert zur unteren Brust absenken, die Unterarme bleiben senkrecht.",
-        "Kraftvoll nach oben drücken, bis die Arme fast gestreckt sind."
-      ],
-      "tips": ["Gesäß, Rücken und Kopf bleiben die ganze Zeit auf der Bank.", "Bei schweren Sätzen mit Spotter oder Sicherheitsarmen trainieren."]
-    },
-    {
-      "name": "Schrägbankdrücken", "aliases": ["Schrägbankdrücken Kurzhantel"], "muscle": "Brust", "secondary": ["Schultern", "Trizeps"], "equipment": "Kurzhantel", "level": "Einsteiger",
-      "steps": [
-        "Bank auf etwa 30 Grad stellen, Kurzhanteln auf die Oberschenkel legen und mit dem Schwung in Position bringen.",
-        "Hanteln über der oberen Brust halten, Schulterblätter fixieren.",
-        "Kontrolliert absenken, bis sich die Ellbogen etwa auf Brusthöhe befinden.",
-        "Die Hanteln in einem leichten Bogen wieder nach oben drücken."
-      ],
-      "tips": ["Eine zu steile Bank verlagert die Belastung auf die Schultern.", "Ellbogen nicht im 90-Grad-Winkel zum Körper abspreizen, sondern leicht angewinkelt halten."]
-    },
-    {
-      "name": "Fliegende", "aliases": ["Fliegende Kurzhantel"], "muscle": "Brust", "secondary": ["Schultern"], "equipment": "Kurzhantel", "level": "Einsteiger",
-      "steps": [
-        "Flach auf der Bank liegen, Hanteln mit leicht gebeugten Ellbogen über der Brust halten.",
-        "In einem weiten Bogen seitlich absenken, bis die Brust deutlich gedehnt wird.",
-        "Die Hanteln in demselben Bogen wieder zusammenführen, als würdest du jemanden umarmen."
-      ],
-      "tips": ["Mit leichteren Gewichten als beim Bankdrücken arbeiten.", "Die Ellbogenstellung bleibt während der ganzen Bewegung gleich."]
-    },
-    {
-      "name": "Butterfly", "aliases": ["Butterfly Maschine"], "muscle": "Brust", "secondary": ["Schultern"], "equipment": "Maschine", "level": "Einsteiger",
-      "steps": [
-        "Sitzhöhe so einstellen, dass die Griffe auf Brusthöhe liegen, Rücken fest anlehnen.",
-        "Griffe mit leicht gebeugten Armen vor der Brust zusammenführen.",
-        "Kurz halten und kontrolliert in die Ausgangsposition zurückkehren."
-      ],
-      "tips": ["Schultern bleiben unten, nicht Richtung Ohren ziehen.", "Nicht zu weit nach hinten dehnen, wenn die Schulter dabei unangenehm wird."]
-    },
-    {
-      "name": "Brustpresse", "muscle": "Brust", "secondary": ["Trizeps", "Schultern"], "equipment": "Maschine", "level": "Einsteiger",
-      "steps": [
-        "Sitz so einstellen, dass die Griffe etwa auf Brusthöhe liegen, Rücken anlehnen.",
-        "Griffe nach vorn drücken, bis die Arme fast gestreckt sind.",
-        "Langsam zurückführen, bis die Brust angenehm gedehnt wird."
-      ],
-      "tips": ["Gute Einstiegsübung, um die Druckbewegung sicher zu lernen.", "Ellbogen nicht vollständig durchstrecken."]
-    },
-    {
-      "name": "Liegestütze", "aliases": ["Liegestütz"], "muscle": "Brust", "secondary": ["Trizeps", "Schultern", "Bauch"], "equipment": "Körpergewicht", "level": "Einsteiger",
-      "steps": [
-        "Hände etwas mehr als schulterbreit aufstützen, Körper bildet eine gerade Linie von Kopf bis Ferse.",
-        "Ellbogen beugen und die Brust kontrolliert Richtung Boden senken.",
-        "Kraftvoll zurück nach oben drücken."
-      ],
-      "tips": ["Bauch und Gesäß anspannen, damit der Rücken nicht durchhängt.", "Zu schwer? Hände auf eine erhöhte Fläche (Bank) stützen."]
-    },
-    {
-      "name": "Kabelzug Brust", "aliases": ["Cable Crossover", "Cable Fly"], "muscle": "Brust", "secondary": ["Schultern"], "equipment": "Kabel", "level": "Fortgeschritten",
-      "steps": [
-        "Seilzüge auf Schulterhöhe oder höher einstellen, einen Griff pro Hand nehmen und einen Schritt nach vorn gehen.",
-        "Mit leicht gebeugten Ellbogen die Griffe in einem Bogen vor der Brust zusammenführen.",
-        "Kontrolliert in die Dehnung zurückführen."
-      ],
-      "tips": ["Oberkörper leicht nach vorn neigen und stabil halten.", "Die Spannung zwischen den Wiederholungen nicht verlieren."]
-    },
-    {
-      "name": "Latziehen", "aliases": ["Latzug"], "muscle": "Rücken", "secondary": ["Bizeps"], "equipment": "Kabel", "level": "Einsteiger",
-      "steps": [
-        "Polster so einstellen, dass die Oberschenkel fixiert sind, Stange etwas weiter als schulterbreit greifen.",
-        "Brust leicht herausstrecken und die Stange zur oberen Brust ziehen, dabei die Ellbogen nach unten führen.",
-        "Kontrolliert zurück nach oben lassen, bis die Arme fast gestreckt sind."
-      ],
-      "tips": ["Nicht mit dem Oberkörper wippen, die Arbeit kommt aus dem Rücken.", "Zur Brust ziehen, nicht hinter den Nacken."]
-    },
-    {
-      "name": "Klimmzüge", "aliases": ["Klimmzug"], "muscle": "Rücken", "secondary": ["Bizeps", "Schultern"], "equipment": "Körpergewicht", "level": "Fortgeschritten",
-      "steps": [
-        "Stange etwas weiter als schulterbreit greifen, aus dem Hang starten, Schulterblätter nach unten ziehen.",
-        "Brust Richtung Stange ziehen, Ellbogen zeigen nach unten.",
-        "Oben kurz halten und kontrolliert in den Hang zurücklassen."
-      ],
-      "tips": ["Mit Unterstützung (Band oder Maschine) oder negativen Wiederholungen beginnen.", "Nicht mit den Beinen schwingen."]
-    },
-    {
-      "name": "Rudern am Kabel", "aliases": ["Kabelrudern", "Rudern sitzend"], "muscle": "Rücken", "secondary": ["Bizeps", "Schultern"], "equipment": "Kabel", "level": "Einsteiger",
-      "steps": [
-        "Aufrecht sitzen, Füße auf die Plattform, Knie leicht gebeugt, Griff mit gestreckten Armen halten.",
-        "Schulterblätter zusammenziehen und den Griff zum Bauchnabel führen.",
-        "Kurz halten und langsam wieder strecken."
-      ],
-      "tips": ["Rücken gerade halten, nicht mit dem Oberkörper vor- und zurückschaukeln.", "Schultern nicht nach oben ziehen."]
-    },
-    {
-      "name": "Langhantelrudern", "aliases": ["Vorgebeugtes Rudern"], "muscle": "Rücken", "secondary": ["Bizeps", "Gesäß"], "equipment": "Langhantel", "level": "Fortgeschritten",
-      "steps": [
-        "Hüftbreit stehen, Hüfte nach hinten schieben und den Oberkörper bei geradem Rücken weit nach vorn neigen.",
-        "Stange mit gestreckten Armen halten und zum unteren Bauch ziehen.",
-        "Kontrolliert absenken, ohne den Rücken zu runden."
-      ],
-      "tips": ["Kern anspannen, Blick leicht nach vorn unten.", "Gewicht lieber moderat wählen, die Technik ist wichtiger."]
-    },
-    {
-      "name": "Einarmiges Kurzhantelrudern", "aliases": ["Kurzhantelrudern"], "muscle": "Rücken", "secondary": ["Bizeps"], "equipment": "Kurzhantel", "level": "Einsteiger",
-      "steps": [
-        "Eine Hand und das gleichseitige Knie auf die Bank stützen, Rücken gerade, Hantel in der freien Hand.",
-        "Den Ellbogen nah am Körper nach hinten oben ziehen.",
-        "Oben kurz halten und die Hantel kontrolliert absenken."
-      ],
-      "tips": ["Oberkörper bleibt ruhig, kein Aufdrehen.", "Der Ellbogen zieht zur Hüfte, nicht zur Schulter."]
-    },
-    {
-      "name": "Kreuzheben", "muscle": "Rücken", "secondary": ["Gesäß", "Beine"], "equipment": "Langhantel", "level": "Fortgeschritten",
-      "steps": [
-        "Mit hüftbreitem Stand so an die Stange treten, dass sie über dem Mittelfuß liegt, Stange schulterbreit greifen.",
-        "Brust öffnen, Rücken gerade, Körper unter Spannung setzen.",
-        "Durch Druck der Beine und Strecken der Hüfte aufrichten, die Stange bleibt nah am Körper.",
-        "Kontrolliert und mit geradem Rücken wieder ablegen."
-      ],
-      "tips": ["Technik zuerst: mit leichten Gewichten und ggf. mit Trainerfeedback üben.", "Rücken niemals runden, bei Unsicherheit Gewicht reduzieren."]
-    },
-    {
-      "name": "Rückenstrecken", "aliases": ["Hyperextensions", "Hyperextension"], "muscle": "Rücken", "secondary": ["Gesäß"], "equipment": "Körpergewicht", "level": "Einsteiger",
-      "steps": [
-        "Hüfte auf dem Polster fixieren, Füße sicher einhaken, Arme vor der Brust verschränken.",
-        "Oberkörper aus der Hüfte absenken, Rücken bleibt gerade.",
-        "Wieder aufrichten, bis der Körper eine Linie bildet."
-      ],
-      "tips": ["Oben nicht überstrecken.", "Langsam und kontrolliert, ohne Schwung."]
-    },
-    {
-      "name": "Schulterdrücken", "aliases": ["Schulterdrücken Kurzhantel", "Kurzhantel-Schulterdrücken"], "muscle": "Schultern", "secondary": ["Trizeps"], "equipment": "Kurzhantel", "level": "Einsteiger",
-      "steps": [
-        "Aufrecht sitzen, Rücken angelehnt, Hanteln auf Schulterhöhe, Unterarme senkrecht.",
-        "Hanteln nach oben drücken, bis die Arme fast gestreckt sind.",
-        "Kontrolliert wieder auf Schulterhöhe absenken."
-      ],
-      "tips": ["Nicht ins Hohlkreuz fallen, Bauch anspannen.", "Hanteln leicht vor dem Körper führen, nicht strikt seitlich."]
-    },
-    {
-      "name": "Seitheben", "aliases": ["Seitheben Kurzhantel"], "muscle": "Schultern", "equipment": "Kurzhantel", "level": "Einsteiger", "secondary": [],
-      "steps": [
-        "Aufrecht stehen, leichte Hanteln seitlich neben dem Körper, Ellbogen leicht gebeugt.",
-        "Arme seitlich bis etwa auf Schulterhöhe anheben.",
-        "Langsam wieder absenken."
-      ],
-      "tips": ["Leichte Gewichte und saubere Technik, kein Schwung aus dem Rücken.", "Ellbogen führen die Bewegung, die Hände sind nicht höher als die Ellbogen."]
-    },
-    {
-      "name": "Face Pulls", "aliases": ["Face Pull"], "muscle": "Schultern", "secondary": ["Rücken"], "equipment": "Kabel", "level": "Einsteiger",
-      "steps": [
-        "Seilzug auf Gesichtshöhe einstellen, Seil mit beiden Händen greifen und zurücktreten.",
-        "Das Seil zum Gesicht ziehen, Ellbogen hoch und nach außen, Schulterblätter zusammen.",
-        "Kontrolliert wieder strecken."
-      ],
-      "tips": ["Gut für die hintere Schulter und eine aufrechte Haltung.", "Mit niedrigem Gewicht und vielen Wiederholungen arbeiten."]
-    },
-    {
-      "name": "Reverse Butterfly", "aliases": ["Hintere Schulter Maschine"], "muscle": "Schultern", "secondary": ["Rücken"], "equipment": "Maschine", "level": "Einsteiger",
-      "steps": [
-        "Brust gegen das Polster, Griffe mit leicht gebeugten Armen greifen.",
-        "Die Arme in einem weiten Bogen nach hinten öffnen.",
-        "Kontrolliert wieder zusammenführen."
-      ],
-      "tips": ["Schulterblätter am Ende zusammenziehen.", "Nicht mit dem Rücken mitschwingen."]
-    },
-    {
-      "name": "Bizeps-Curls", "aliases": ["Bizepscurls", "Kurzhantel-Curls", "Curls"], "muscle": "Bizeps", "secondary": [], "equipment": "Kurzhantel", "level": "Einsteiger",
-      "steps": [
-        "Aufrecht stehen, Hanteln mit Untergriff halten, Ellbogen am Körper.",
-        "Die Hanteln zu den Schultern heben, ohne die Ellbogen nach vorn zu schieben.",
-        "Langsam absenken, bis die Arme fast gestreckt sind."
-      ],
-      "tips": ["Nicht mit dem Oberkörper schwingen.", "Die Absenkphase bewusst langsam ausführen."]
-    },
-    {
-      "name": "SZ-Curls", "aliases": ["SZ Curls", "Langhantel-Curls"], "muscle": "Bizeps", "secondary": [], "equipment": "Langhantel", "level": "Einsteiger",
-      "steps": [
-        "Aufrecht stehen, SZ-Stange im Untergriff halten, Ellbogen am Körper.",
-        "Stange kontrolliert zu den Schultern heben.",
-        "Langsam wieder absenken."
-      ],
-      "tips": ["Die SZ-Stange schont die Handgelenke.", "Gesäß und Bauch fest, kein Hohlkreuz."]
-    },
-    {
-      "name": "Hammer-Curls", "aliases": ["Hammer Curls"], "muscle": "Bizeps", "secondary": ["Unterarme"], "equipment": "Kurzhantel", "level": "Einsteiger",
-      "steps": [
-        "Aufrecht stehen, Hanteln im Hammergriff (Handflächen zeigen zueinander) neben den Körper halten.",
-        "Hanteln zu den Schultern anheben, Ellbogen bleiben vorn am Körper.",
-        "Kontrolliert absenken."
-      ],
-      "tips": ["Trainiert zusätzlich den Oberarmmuskel und die Unterarme.", "Beide Arme gleichzeitig oder abwechselnd möglich."]
-    },
-    {
-      "name": "Trizepsdrücken", "aliases": ["Trizepsdrücken am Kabel", "Trizeps Pushdown"], "muscle": "Trizeps", "secondary": [], "equipment": "Kabel", "level": "Einsteiger",
-      "steps": [
-        "Seil oder Stange am oberen Kabelzug greifen, Ellbogen eng am Körper, Oberkörper leicht nach vorn geneigt.",
-        "Die Unterarme nach unten drücken, bis die Arme gestreckt sind.",
-        "Kontrolliert wieder bis etwa zum 90-Grad-Winkel zurückführen."
-      ],
-      "tips": ["Nur die Unterarme bewegen, die Ellbogen bleiben fix.", "Unten kurz anspannen."]
-    },
-    {
-      "name": "Dips", "aliases": ["Barrenstütz"], "muscle": "Trizeps", "secondary": ["Brust", "Schultern"], "equipment": "Körpergewicht", "level": "Fortgeschritten",
-      "steps": [
-        "Im Stütz an den Barren, Körper aufrecht, Schultern unten.",
-        "Ellbogen beugen und kontrolliert bis etwa 90 Grad absenken.",
-        "Kraftvoll zurück nach oben drücken."
-      ],
-      "tips": ["Nicht zu tief absinken, wenn die Schulter ziept.", "Unterstützt an der Dip-Maschine lässt sich die Bewegung gut lernen."]
-    },
-    {
-      "name": "Stirndrücken", "aliases": ["Skull Crusher", "Skullcrusher"], "muscle": "Trizeps", "secondary": [], "equipment": "Langhantel", "level": "Fortgeschritten",
-      "steps": [
-        "Flach auf der Bank liegen, SZ-Stange mit gestreckten Armen über der Brust halten.",
-        "Nur die Unterarme beugen und die Stange kontrolliert zur Stirn oder knapp dahinter absenken.",
-        "Die Arme wieder strecken."
-      ],
-      "tips": ["Ellbogen zeigen zur Decke und bleiben schmal.", "Gewicht moderat wählen, die Ellbogen werden stark belastet."]
-    },
-    {
-      "name": "Überkopf-Trizepsstrecken", "aliases": ["Trizepsstrecken Überkopf"], "muscle": "Trizeps", "secondary": [], "equipment": "Kurzhantel", "level": "Einsteiger",
-      "steps": [
-        "Aufrecht stehen oder sitzen, eine Hantel mit beiden Händen über den Kopf halten.",
-        "Die Hantel hinter dem Kopf absenken, Ellbogen zeigen nach oben.",
-        "Die Arme wieder strecken."
-      ],
-      "tips": ["Ellbogen möglichst eng halten.", "Bauch anspannen, kein Hohlkreuz."]
-    },
-    {
-      "name": "Kniebeugen", "aliases": ["Kniebeuge", "Squat"], "muscle": "Beine", "secondary": ["Gesäß", "Rücken", "Bauch"], "equipment": "Langhantel", "level": "Fortgeschritten",
-      "steps": [
-        "Stange auf dem oberen Rücken (nicht auf dem Nacken) ablegen, etwa schulterbreit stehen, Füße leicht nach außen.",
-        "Hüfte nach hinten und unten schieben, Knie folgen den Fußspitzen, Rücken bleibt gerade.",
-        "So tief gehen, wie es mit stabilem Rücken möglich ist.",
-        "Mit Druck durch die ganze Fußsohle wieder aufrichten."
-      ],
-      "tips": ["Immer im Rack mit Sicherheitsarmen trainieren.", "Mit leichtem Gewicht oder Goblet-Squats die Technik lernen."]
-    },
-    {
-      "name": "Beinpresse", "muscle": "Beine", "secondary": ["Gesäß"], "equipment": "Maschine", "level": "Einsteiger",
-      "steps": [
-        "Rücken und Gesäß fest am Polster, Füße etwa schulterbreit auf die Platte.",
-        "Platte kontrolliert absenken, bis die Knie etwa 90 Grad erreichen.",
-        "Durch die Fersen wieder wegdrücken."
-      ],
-      "tips": ["Knie nicht durchstrecken.", "Das Gesäß darf sich unten nicht vom Polster lösen."]
-    },
-    {
-      "name": "Ausfallschritte", "aliases": ["Ausfallschritt", "Lunges"], "muscle": "Beine", "secondary": ["Gesäß"], "equipment": "Kurzhantel", "level": "Einsteiger",
-      "steps": [
-        "Aufrecht stehen, in jeder Hand eine Hantel.",
-        "Mit einem großen Schritt nach vorn gehen und das hintere Knie Richtung Boden senken.",
-        "Mit dem vorderen Fuß abdrücken und zurück in den Stand kommen, dann Seite wechseln."
-      ],
-      "tips": ["Oberkörper bleibt aufrecht.", "Das vordere Knie bleibt über dem Fuß, nicht nach innen kippen."]
-    },
-    {
-      "name": "Beinstrecker", "aliases": ["Beinstrecken"], "muscle": "Beine", "secondary": [], "equipment": "Maschine", "level": "Einsteiger",
-      "steps": [
-        "Sitz so einstellen, dass die Knie auf Höhe der Drehachse liegen, Polster knapp oberhalb der Füße.",
-        "Beine nach vorn strecken und oben kurz anspannen.",
-        "Langsam wieder absenken."
-      ],
-      "tips": ["Keine ruckartigen Bewegungen, Knie schonen.", "Oben nicht hart durchstrecken."]
-    },
-    {
-      "name": "Beinbeuger", "aliases": ["Beinbeugen", "Beinbeuger liegend"], "muscle": "Beine", "secondary": ["Waden"], "equipment": "Maschine", "level": "Einsteiger",
-      "steps": [
-        "Bauchlings oder sitzend einstellen, Polster direkt oberhalb der Fersen.",
-        "Die Fersen Richtung Gesäß ziehen.",
-        "Langsam in die Ausgangsposition zurückführen."
-      ],
-      "tips": ["Das Becken bleibt auf dem Polster liegen.", "Bewegung bewusst kontrolliert ausführen."]
-    },
-    {
-      "name": "Rumänisches Kreuzheben", "aliases": ["Rumänisches Kreuzheben Langhantel", "RDL"], "muscle": "Beine", "secondary": ["Gesäß", "Rücken"], "equipment": "Langhantel", "level": "Fortgeschritten",
-      "steps": [
-        "Aufrecht stehen, Stange vor den Oberschenkeln halten, Knie leicht gebeugt.",
-        "Hüfte weit nach hinten schieben, die Stange gleitet dicht am Bein nach unten.",
-        "Absenken, bis die Rückseite der Oberschenkel deutlich gedehnt wird.",
-        "Hüfte nach vorn schieben und aufrichten."
-      ],
-      "tips": ["Rücken bleibt die ganze Zeit gerade.", "Die Bewegung kommt aus der Hüfte, nicht aus dem Rücken."]
-    },
-    {
-      "name": "Bulgarian Split Squats", "aliases": ["Bulgarische Kniebeugen", "Bulgarian Split Squat"], "muscle": "Beine", "secondary": ["Gesäß"], "equipment": "Kurzhantel", "level": "Fortgeschritten",
-      "steps": [
-        "Einen Fuß hinten auf eine Bank legen, den anderen etwa einen großen Schritt davor aufsetzen.",
-        "Mit aufrechtem Oberkörper in die Knie gehen, bis der vordere Oberschenkel etwa waagerecht ist.",
-        "Durch den vorderen Fuß wieder hochdrücken."
-      ],
-      "tips": ["Ohne Gewicht üben, bis das Gleichgewicht sitzt.", "Eine Seite nach der anderen trainieren."]
-    },
-    {
-      "name": "Hip Thrusts", "aliases": ["Hip Thrust"], "muscle": "Gesäß", "secondary": ["Beine"], "equipment": "Langhantel", "level": "Fortgeschritten",
-      "steps": [
-        "Oberen Rücken an eine Bank lehnen, Stange mit Polster auf der Hüfte, Füße hüftbreit aufgestellt.",
-        "Die Hüfte kraftvoll nach oben drücken, bis Oberkörper und Oberschenkel eine Linie bilden.",
-        "Oben kurz anspannen, kontrolliert absenken."
-      ],
-      "tips": ["Kinn leicht zur Brust, Rippen unten halten, kein Hohlkreuz.", "Das Gesäß arbeitet, nicht der untere Rücken."]
-    },
-    {
-      "name": "Glute Bridge", "aliases": ["Beckenheben"], "muscle": "Gesäß", "secondary": ["Beine"], "equipment": "Körpergewicht", "level": "Einsteiger",
-      "steps": [
-        "Auf dem Rücken liegen, Füße hüftbreit aufstellen, Arme neben dem Körper.",
-        "Die Hüfte anheben, bis Schultern, Hüfte und Knie eine Linie bilden.",
-        "Oben das Gesäß anspannen, dann langsam absenken."
-      ],
-      "tips": ["Fersen in den Boden drücken.", "Schwerer machen: einbeinig oder mit Gewicht auf der Hüfte."]
-    },
-    {
-      "name": "Hip Abduktion", "aliases": ["Abduktoren", "Abduktorenmaschine"], "muscle": "Gesäß", "secondary": [], "equipment": "Maschine", "level": "Einsteiger",
-      "steps": [
-        "Aufrecht in die Maschine setzen, Polster außen an den Knien.",
-        "Die Beine kontrolliert nach außen drücken.",
-        "Langsam wieder zusammenführen."
-      ],
-      "tips": ["Rücken angelehnt, Oberkörper ruhig.", "Mit moderatem Gewicht und vielen Wiederholungen arbeiten."]
-    },
-    {
-      "name": "Plank", "aliases": ["Unterarmstütz"], "muscle": "Bauch", "secondary": ["Schultern", "Rücken"], "equipment": "Körpergewicht", "level": "Einsteiger",
-      "steps": [
-        "Auf die Unterarme stützen, Ellbogen unter den Schultern, Beine gestreckt.",
-        "Körper in einer geraden Linie halten, Bauch, Gesäß und Oberschenkel anspannen.",
-        "Position halten und ruhig weiteratmen."
-      ],
-      "tips": ["Becken nicht absacken lassen und nicht zu hoch schieben.", "Lieber kürzer halten und sauber bleiben."]
-    },
-    {
-      "name": "Crunches am Kabel", "aliases": ["Kabelcrunch", "Kabel-Crunch"], "muscle": "Bauch", "secondary": [], "equipment": "Kabel", "level": "Einsteiger",
-      "steps": [
-        "Kniend vor dem oberen Kabelzug, das Seil mit beiden Händen neben dem Kopf halten.",
-        "Den Oberkörper aus dem Bauch heraus nach unten rollen, Ellbogen Richtung Oberschenkel.",
-        "Kontrolliert wieder aufrichten."
-      ],
-      "tips": ["Hüfte bleibt in Position, die Bewegung kommt aus dem Bauch.", "Nicht mit den Armen ziehen."]
-    },
-    {
-      "name": "Beinheben hängend", "aliases": ["Hängendes Beinheben", "Knieheben hängend"], "muscle": "Bauch", "secondary": ["Unterarme"], "equipment": "Körpergewicht", "level": "Fortgeschritten",
-      "steps": [
-        "An einer Stange hängen oder in den Armstützen einer Beinhebe-Station, Körper ruhig.",
-        "Die Knie oder gestreckten Beine kontrolliert nach oben heben, Becken leicht aufrollen.",
-        "Langsam wieder absenken, ohne zu schwingen."
-      ],
-      "tips": ["Einsteiger: Knie angewinkelt heben.", "Kein Schwung aus dem Körper."]
-    },
-    {
-      "name": "Wadenheben", "aliases": ["Wadenheben stehend", "Wadenheben Maschine"], "muscle": "Waden", "secondary": [], "equipment": "Maschine", "level": "Einsteiger",
-      "steps": [
-        "Mit den Fußballen auf die Plattform stellen, Fersen hängen frei, Schultern unter dem Polster.",
-        "Auf die Zehenspitzen hochdrücken und oben kurz halten.",
-        "Die Fersen langsam bis zur Dehnung absenken."
-      ],
-      "tips": ["Volle Bewegungsweite nutzen.", "Langsame Wiederholungen bringen mehr als Schwung."]
-    },
-    {
-      "name": "Wadenheben sitzend", "muscle": "Waden", "secondary": [], "equipment": "Maschine", "level": "Einsteiger",
-      "steps": [
-        "Sitzen, Polster auf den Oberschenkeln fixieren, Fußballen auf die Plattform.",
-        "Fersen anheben und oben kurz anspannen.",
-        "Langsam absenken, bis die Waden gedehnt werden."
-      ],
-      "tips": ["Trainiert den tiefer liegenden Wadenmuskel stärker als die stehende Variante.", "Nicht federn, sondern kontrolliert arbeiten."]
-    }
-  ]
+ "muscles": [
+  "Brust",
+  "Rücken",
+  "Schultern",
+  "Bizeps",
+  "Trizeps",
+  "Beine",
+  "Gesäß",
+  "Bauch",
+  "Waden"
+ ],
+ "equipment": [
+  "Langhantel",
+  "Kurzhantel",
+  "Kabel",
+  "Maschine",
+  "Körpergewicht"
+ ],
+ "exercises": [
+  {
+   "name": "Bankdrücken",
+   "muscle": "Brust",
+   "secondary": [
+    "Trizeps",
+    "Schultern"
+   ],
+   "equipment": "Langhantel",
+   "level": "Fortgeschritten",
+   "steps": [
+    "Flach auf die Bank legen, Füße fest am Boden, Schulterblätter zusammen- und nach unten ziehen.",
+    "Stange etwas mehr als schulterbreit greifen und aus dem Rack heben.",
+    "Kontrolliert zur unteren Brust absenken, die Unterarme bleiben senkrecht.",
+    "Kraftvoll nach oben drücken, bis die Arme fast gestreckt sind."
+   ],
+   "tips": [
+    "Gesäß, Rücken und Kopf bleiben die ganze Zeit auf der Bank.",
+    "Bei schweren Sätzen mit Spotter oder Sicherheitsarmen trainieren."
+   ],
+   "images": [
+    "/img/lib/bankdruecken-1.jpg",
+    "/img/lib/bankdruecken-2.jpg"
+   ]
+  },
+  {
+   "name": "Schrägbankdrücken",
+   "aliases": [
+    "Schrägbankdrücken Kurzhantel"
+   ],
+   "muscle": "Brust",
+   "secondary": [
+    "Schultern",
+    "Trizeps"
+   ],
+   "equipment": "Kurzhantel",
+   "level": "Einsteiger",
+   "steps": [
+    "Bank auf etwa 30 Grad stellen, Kurzhanteln auf die Oberschenkel legen und mit dem Schwung in Position bringen.",
+    "Hanteln über der oberen Brust halten, Schulterblätter fixieren.",
+    "Kontrolliert absenken, bis sich die Ellbogen etwa auf Brusthöhe befinden.",
+    "Die Hanteln in einem leichten Bogen wieder nach oben drücken."
+   ],
+   "tips": [
+    "Eine zu steile Bank verlagert die Belastung auf die Schultern.",
+    "Ellbogen nicht im 90-Grad-Winkel zum Körper abspreizen, sondern leicht angewinkelt halten."
+   ],
+   "images": [
+    "/img/lib/schraegbankdruecken-1.jpg",
+    "/img/lib/schraegbankdruecken-2.jpg"
+   ]
+  },
+  {
+   "name": "Fliegende",
+   "aliases": [
+    "Fliegende Kurzhantel"
+   ],
+   "muscle": "Brust",
+   "secondary": [
+    "Schultern"
+   ],
+   "equipment": "Kurzhantel",
+   "level": "Einsteiger",
+   "steps": [
+    "Flach auf der Bank liegen, Hanteln mit leicht gebeugten Ellbogen über der Brust halten.",
+    "In einem weiten Bogen seitlich absenken, bis die Brust deutlich gedehnt wird.",
+    "Die Hanteln in demselben Bogen wieder zusammenführen, als würdest du jemanden umarmen."
+   ],
+   "tips": [
+    "Mit leichteren Gewichten als beim Bankdrücken arbeiten.",
+    "Die Ellbogenstellung bleibt während der ganzen Bewegung gleich."
+   ],
+   "images": [
+    "/img/lib/fliegende-1.jpg",
+    "/img/lib/fliegende-2.jpg"
+   ]
+  },
+  {
+   "name": "Butterfly",
+   "aliases": [
+    "Butterfly Maschine"
+   ],
+   "muscle": "Brust",
+   "secondary": [
+    "Schultern"
+   ],
+   "equipment": "Maschine",
+   "level": "Einsteiger",
+   "steps": [
+    "Sitzhöhe so einstellen, dass die Griffe auf Brusthöhe liegen, Rücken fest anlehnen.",
+    "Griffe mit leicht gebeugten Armen vor der Brust zusammenführen.",
+    "Kurz halten und kontrolliert in die Ausgangsposition zurückkehren."
+   ],
+   "tips": [
+    "Schultern bleiben unten, nicht Richtung Ohren ziehen.",
+    "Nicht zu weit nach hinten dehnen, wenn die Schulter dabei unangenehm wird."
+   ],
+   "images": [
+    "/img/lib/butterfly-1.jpg",
+    "/img/lib/butterfly-2.jpg"
+   ]
+  },
+  {
+   "name": "Brustpresse",
+   "muscle": "Brust",
+   "secondary": [
+    "Trizeps",
+    "Schultern"
+   ],
+   "equipment": "Maschine",
+   "level": "Einsteiger",
+   "steps": [
+    "Sitz so einstellen, dass die Griffe etwa auf Brusthöhe liegen, Rücken anlehnen.",
+    "Griffe nach vorn drücken, bis die Arme fast gestreckt sind.",
+    "Langsam zurückführen, bis die Brust angenehm gedehnt wird."
+   ],
+   "tips": [
+    "Gute Einstiegsübung, um die Druckbewegung sicher zu lernen.",
+    "Ellbogen nicht vollständig durchstrecken."
+   ],
+   "images": [
+    "/img/lib/brustpresse-1.jpg",
+    "/img/lib/brustpresse-2.jpg"
+   ]
+  },
+  {
+   "name": "Liegestütze",
+   "aliases": [
+    "Liegestütz"
+   ],
+   "muscle": "Brust",
+   "secondary": [
+    "Trizeps",
+    "Schultern",
+    "Bauch"
+   ],
+   "equipment": "Körpergewicht",
+   "level": "Einsteiger",
+   "steps": [
+    "Hände etwas mehr als schulterbreit aufstützen, Körper bildet eine gerade Linie von Kopf bis Ferse.",
+    "Ellbogen beugen und die Brust kontrolliert Richtung Boden senken.",
+    "Kraftvoll zurück nach oben drücken."
+   ],
+   "tips": [
+    "Bauch und Gesäß anspannen, damit der Rücken nicht durchhängt.",
+    "Zu schwer? Hände auf eine erhöhte Fläche (Bank) stützen."
+   ],
+   "images": [
+    "/img/lib/liegestuetze-1.jpg",
+    "/img/lib/liegestuetze-2.jpg"
+   ]
+  },
+  {
+   "name": "Kabelzug Brust",
+   "aliases": [
+    "Cable Crossover",
+    "Cable Fly"
+   ],
+   "muscle": "Brust",
+   "secondary": [
+    "Schultern"
+   ],
+   "equipment": "Kabel",
+   "level": "Fortgeschritten",
+   "steps": [
+    "Seilzüge auf Schulterhöhe oder höher einstellen, einen Griff pro Hand nehmen und einen Schritt nach vorn gehen.",
+    "Mit leicht gebeugten Ellbogen die Griffe in einem Bogen vor der Brust zusammenführen.",
+    "Kontrolliert in die Dehnung zurückführen."
+   ],
+   "tips": [
+    "Oberkörper leicht nach vorn neigen und stabil halten.",
+    "Die Spannung zwischen den Wiederholungen nicht verlieren."
+   ],
+   "images": [
+    "/img/lib/kabelzug-brust-1.jpg",
+    "/img/lib/kabelzug-brust-2.jpg"
+   ]
+  },
+  {
+   "name": "Latziehen",
+   "aliases": [
+    "Latzug"
+   ],
+   "muscle": "Rücken",
+   "secondary": [
+    "Bizeps"
+   ],
+   "equipment": "Kabel",
+   "level": "Einsteiger",
+   "steps": [
+    "Polster so einstellen, dass die Oberschenkel fixiert sind, Stange etwas weiter als schulterbreit greifen.",
+    "Brust leicht herausstrecken und die Stange zur oberen Brust ziehen, dabei die Ellbogen nach unten führen.",
+    "Kontrolliert zurück nach oben lassen, bis die Arme fast gestreckt sind."
+   ],
+   "tips": [
+    "Nicht mit dem Oberkörper wippen, die Arbeit kommt aus dem Rücken.",
+    "Zur Brust ziehen, nicht hinter den Nacken."
+   ],
+   "images": [
+    "/img/lib/latziehen-1.jpg",
+    "/img/lib/latziehen-2.jpg"
+   ]
+  },
+  {
+   "name": "Klimmzüge",
+   "aliases": [
+    "Klimmzug"
+   ],
+   "muscle": "Rücken",
+   "secondary": [
+    "Bizeps",
+    "Schultern"
+   ],
+   "equipment": "Körpergewicht",
+   "level": "Fortgeschritten",
+   "steps": [
+    "Stange etwas weiter als schulterbreit greifen, aus dem Hang starten, Schulterblätter nach unten ziehen.",
+    "Brust Richtung Stange ziehen, Ellbogen zeigen nach unten.",
+    "Oben kurz halten und kontrolliert in den Hang zurücklassen."
+   ],
+   "tips": [
+    "Mit Unterstützung (Band oder Maschine) oder negativen Wiederholungen beginnen.",
+    "Nicht mit den Beinen schwingen."
+   ],
+   "images": [
+    "/img/lib/klimmzuege-1.jpg",
+    "/img/lib/klimmzuege-2.jpg"
+   ]
+  },
+  {
+   "name": "Rudern am Kabel",
+   "aliases": [
+    "Kabelrudern",
+    "Rudern sitzend"
+   ],
+   "muscle": "Rücken",
+   "secondary": [
+    "Bizeps",
+    "Schultern"
+   ],
+   "equipment": "Kabel",
+   "level": "Einsteiger",
+   "steps": [
+    "Aufrecht sitzen, Füße auf die Plattform, Knie leicht gebeugt, Griff mit gestreckten Armen halten.",
+    "Schulterblätter zusammenziehen und den Griff zum Bauchnabel führen.",
+    "Kurz halten und langsam wieder strecken."
+   ],
+   "tips": [
+    "Rücken gerade halten, nicht mit dem Oberkörper vor- und zurückschaukeln.",
+    "Schultern nicht nach oben ziehen."
+   ],
+   "images": [
+    "/img/lib/rudern-am-kabel-1.jpg",
+    "/img/lib/rudern-am-kabel-2.jpg"
+   ]
+  },
+  {
+   "name": "Langhantelrudern",
+   "aliases": [
+    "Vorgebeugtes Rudern"
+   ],
+   "muscle": "Rücken",
+   "secondary": [
+    "Bizeps",
+    "Gesäß"
+   ],
+   "equipment": "Langhantel",
+   "level": "Fortgeschritten",
+   "steps": [
+    "Hüftbreit stehen, Hüfte nach hinten schieben und den Oberkörper bei geradem Rücken weit nach vorn neigen.",
+    "Stange mit gestreckten Armen halten und zum unteren Bauch ziehen.",
+    "Kontrolliert absenken, ohne den Rücken zu runden."
+   ],
+   "tips": [
+    "Kern anspannen, Blick leicht nach vorn unten.",
+    "Gewicht lieber moderat wählen, die Technik ist wichtiger."
+   ],
+   "images": [
+    "/img/lib/langhantelrudern-1.jpg",
+    "/img/lib/langhantelrudern-2.jpg"
+   ]
+  },
+  {
+   "name": "Einarmiges Kurzhantelrudern",
+   "aliases": [
+    "Kurzhantelrudern"
+   ],
+   "muscle": "Rücken",
+   "secondary": [
+    "Bizeps"
+   ],
+   "equipment": "Kurzhantel",
+   "level": "Einsteiger",
+   "steps": [
+    "Eine Hand und das gleichseitige Knie auf die Bank stützen, Rücken gerade, Hantel in der freien Hand.",
+    "Den Ellbogen nah am Körper nach hinten oben ziehen.",
+    "Oben kurz halten und die Hantel kontrolliert absenken."
+   ],
+   "tips": [
+    "Oberkörper bleibt ruhig, kein Aufdrehen.",
+    "Der Ellbogen zieht zur Hüfte, nicht zur Schulter."
+   ],
+   "images": [
+    "/img/lib/einarmiges-kurzhantelrudern-1.jpg",
+    "/img/lib/einarmiges-kurzhantelrudern-2.jpg"
+   ]
+  },
+  {
+   "name": "Kreuzheben",
+   "muscle": "Rücken",
+   "secondary": [
+    "Gesäß",
+    "Beine"
+   ],
+   "equipment": "Langhantel",
+   "level": "Fortgeschritten",
+   "steps": [
+    "Mit hüftbreitem Stand so an die Stange treten, dass sie über dem Mittelfuß liegt, Stange schulterbreit greifen.",
+    "Brust öffnen, Rücken gerade, Körper unter Spannung setzen.",
+    "Durch Druck der Beine und Strecken der Hüfte aufrichten, die Stange bleibt nah am Körper.",
+    "Kontrolliert und mit geradem Rücken wieder ablegen."
+   ],
+   "tips": [
+    "Technik zuerst: mit leichten Gewichten und ggf. mit Trainerfeedback üben.",
+    "Rücken niemals runden, bei Unsicherheit Gewicht reduzieren."
+   ],
+   "images": [
+    "/img/lib/kreuzheben-1.jpg",
+    "/img/lib/kreuzheben-2.jpg"
+   ]
+  },
+  {
+   "name": "Rückenstrecken",
+   "aliases": [
+    "Hyperextensions",
+    "Hyperextension"
+   ],
+   "muscle": "Rücken",
+   "secondary": [
+    "Gesäß"
+   ],
+   "equipment": "Körpergewicht",
+   "level": "Einsteiger",
+   "steps": [
+    "Hüfte auf dem Polster fixieren, Füße sicher einhaken, Arme vor der Brust verschränken.",
+    "Oberkörper aus der Hüfte absenken, Rücken bleibt gerade.",
+    "Wieder aufrichten, bis der Körper eine Linie bildet."
+   ],
+   "tips": [
+    "Oben nicht überstrecken.",
+    "Langsam und kontrolliert, ohne Schwung."
+   ],
+   "images": [
+    "/img/lib/rueckenstrecken-1.jpg",
+    "/img/lib/rueckenstrecken-2.jpg"
+   ]
+  },
+  {
+   "name": "Schulterdrücken",
+   "aliases": [
+    "Schulterdrücken Kurzhantel",
+    "Kurzhantel-Schulterdrücken"
+   ],
+   "muscle": "Schultern",
+   "secondary": [
+    "Trizeps"
+   ],
+   "equipment": "Kurzhantel",
+   "level": "Einsteiger",
+   "steps": [
+    "Aufrecht sitzen, Rücken angelehnt, Hanteln auf Schulterhöhe, Unterarme senkrecht.",
+    "Hanteln nach oben drücken, bis die Arme fast gestreckt sind.",
+    "Kontrolliert wieder auf Schulterhöhe absenken."
+   ],
+   "tips": [
+    "Nicht ins Hohlkreuz fallen, Bauch anspannen.",
+    "Hanteln leicht vor dem Körper führen, nicht strikt seitlich."
+   ],
+   "images": [
+    "/img/lib/schulterdruecken-1.jpg",
+    "/img/lib/schulterdruecken-2.jpg"
+   ]
+  },
+  {
+   "name": "Seitheben",
+   "aliases": [
+    "Seitheben Kurzhantel"
+   ],
+   "muscle": "Schultern",
+   "equipment": "Kurzhantel",
+   "level": "Einsteiger",
+   "secondary": [],
+   "steps": [
+    "Aufrecht stehen, leichte Hanteln seitlich neben dem Körper, Ellbogen leicht gebeugt.",
+    "Arme seitlich bis etwa auf Schulterhöhe anheben.",
+    "Langsam wieder absenken."
+   ],
+   "tips": [
+    "Leichte Gewichte und saubere Technik, kein Schwung aus dem Rücken.",
+    "Ellbogen führen die Bewegung, die Hände sind nicht höher als die Ellbogen."
+   ],
+   "images": [
+    "/img/lib/seitheben-1.jpg",
+    "/img/lib/seitheben-2.jpg"
+   ]
+  },
+  {
+   "name": "Face Pulls",
+   "aliases": [
+    "Face Pull"
+   ],
+   "muscle": "Schultern",
+   "secondary": [
+    "Rücken"
+   ],
+   "equipment": "Kabel",
+   "level": "Einsteiger",
+   "steps": [
+    "Seilzug auf Gesichtshöhe einstellen, Seil mit beiden Händen greifen und zurücktreten.",
+    "Das Seil zum Gesicht ziehen, Ellbogen hoch und nach außen, Schulterblätter zusammen.",
+    "Kontrolliert wieder strecken."
+   ],
+   "tips": [
+    "Gut für die hintere Schulter und eine aufrechte Haltung.",
+    "Mit niedrigem Gewicht und vielen Wiederholungen arbeiten."
+   ],
+   "images": [
+    "/img/lib/face-pulls-1.jpg",
+    "/img/lib/face-pulls-2.jpg"
+   ]
+  },
+  {
+   "name": "Reverse Butterfly",
+   "aliases": [
+    "Hintere Schulter Maschine"
+   ],
+   "muscle": "Schultern",
+   "secondary": [
+    "Rücken"
+   ],
+   "equipment": "Maschine",
+   "level": "Einsteiger",
+   "steps": [
+    "Brust gegen das Polster, Griffe mit leicht gebeugten Armen greifen.",
+    "Die Arme in einem weiten Bogen nach hinten öffnen.",
+    "Kontrolliert wieder zusammenführen."
+   ],
+   "tips": [
+    "Schulterblätter am Ende zusammenziehen.",
+    "Nicht mit dem Rücken mitschwingen."
+   ],
+   "images": [
+    "/img/lib/reverse-butterfly-1.jpg",
+    "/img/lib/reverse-butterfly-2.jpg"
+   ]
+  },
+  {
+   "name": "Bizeps-Curls",
+   "aliases": [
+    "Bizepscurls",
+    "Kurzhantel-Curls",
+    "Curls"
+   ],
+   "muscle": "Bizeps",
+   "secondary": [],
+   "equipment": "Kurzhantel",
+   "level": "Einsteiger",
+   "steps": [
+    "Aufrecht stehen, Hanteln mit Untergriff halten, Ellbogen am Körper.",
+    "Die Hanteln zu den Schultern heben, ohne die Ellbogen nach vorn zu schieben.",
+    "Langsam absenken, bis die Arme fast gestreckt sind."
+   ],
+   "tips": [
+    "Nicht mit dem Oberkörper schwingen.",
+    "Die Absenkphase bewusst langsam ausführen."
+   ],
+   "images": [
+    "/img/lib/bizeps-curls-1.jpg",
+    "/img/lib/bizeps-curls-2.jpg"
+   ]
+  },
+  {
+   "name": "SZ-Curls",
+   "aliases": [
+    "SZ Curls",
+    "Langhantel-Curls"
+   ],
+   "muscle": "Bizeps",
+   "secondary": [],
+   "equipment": "Langhantel",
+   "level": "Einsteiger",
+   "steps": [
+    "Aufrecht stehen, SZ-Stange im Untergriff halten, Ellbogen am Körper.",
+    "Stange kontrolliert zu den Schultern heben.",
+    "Langsam wieder absenken."
+   ],
+   "tips": [
+    "Die SZ-Stange schont die Handgelenke.",
+    "Gesäß und Bauch fest, kein Hohlkreuz."
+   ],
+   "images": [
+    "/img/lib/sz-curls-1.jpg",
+    "/img/lib/sz-curls-2.jpg"
+   ]
+  },
+  {
+   "name": "Hammer-Curls",
+   "aliases": [
+    "Hammer Curls"
+   ],
+   "muscle": "Bizeps",
+   "secondary": [
+    "Unterarme"
+   ],
+   "equipment": "Kurzhantel",
+   "level": "Einsteiger",
+   "steps": [
+    "Aufrecht stehen, Hanteln im Hammergriff (Handflächen zeigen zueinander) neben den Körper halten.",
+    "Hanteln zu den Schultern anheben, Ellbogen bleiben vorn am Körper.",
+    "Kontrolliert absenken."
+   ],
+   "tips": [
+    "Trainiert zusätzlich den Oberarmmuskel und die Unterarme.",
+    "Beide Arme gleichzeitig oder abwechselnd möglich."
+   ],
+   "images": [
+    "/img/lib/hammer-curls-1.jpg",
+    "/img/lib/hammer-curls-2.jpg"
+   ]
+  },
+  {
+   "name": "Trizepsdrücken",
+   "aliases": [
+    "Trizepsdrücken am Kabel",
+    "Trizeps Pushdown"
+   ],
+   "muscle": "Trizeps",
+   "secondary": [],
+   "equipment": "Kabel",
+   "level": "Einsteiger",
+   "steps": [
+    "Seil oder Stange am oberen Kabelzug greifen, Ellbogen eng am Körper, Oberkörper leicht nach vorn geneigt.",
+    "Die Unterarme nach unten drücken, bis die Arme gestreckt sind.",
+    "Kontrolliert wieder bis etwa zum 90-Grad-Winkel zurückführen."
+   ],
+   "tips": [
+    "Nur die Unterarme bewegen, die Ellbogen bleiben fix.",
+    "Unten kurz anspannen."
+   ],
+   "images": [
+    "/img/lib/trizepsdruecken-1.jpg",
+    "/img/lib/trizepsdruecken-2.jpg"
+   ]
+  },
+  {
+   "name": "Dips",
+   "aliases": [
+    "Barrenstütz"
+   ],
+   "muscle": "Trizeps",
+   "secondary": [
+    "Brust",
+    "Schultern"
+   ],
+   "equipment": "Körpergewicht",
+   "level": "Fortgeschritten",
+   "steps": [
+    "Im Stütz an den Barren, Körper aufrecht, Schultern unten.",
+    "Ellbogen beugen und kontrolliert bis etwa 90 Grad absenken.",
+    "Kraftvoll zurück nach oben drücken."
+   ],
+   "tips": [
+    "Nicht zu tief absinken, wenn die Schulter ziept.",
+    "Unterstützt an der Dip-Maschine lässt sich die Bewegung gut lernen."
+   ],
+   "images": [
+    "/img/lib/dips-1.jpg",
+    "/img/lib/dips-2.jpg"
+   ]
+  },
+  {
+   "name": "Stirndrücken",
+   "aliases": [
+    "Skull Crusher",
+    "Skullcrusher"
+   ],
+   "muscle": "Trizeps",
+   "secondary": [],
+   "equipment": "Langhantel",
+   "level": "Fortgeschritten",
+   "steps": [
+    "Flach auf der Bank liegen, SZ-Stange mit gestreckten Armen über der Brust halten.",
+    "Nur die Unterarme beugen und die Stange kontrolliert zur Stirn oder knapp dahinter absenken.",
+    "Die Arme wieder strecken."
+   ],
+   "tips": [
+    "Ellbogen zeigen zur Decke und bleiben schmal.",
+    "Gewicht moderat wählen, die Ellbogen werden stark belastet."
+   ],
+   "images": [
+    "/img/lib/stirndruecken-1.jpg",
+    "/img/lib/stirndruecken-2.jpg"
+   ]
+  },
+  {
+   "name": "Überkopf-Trizepsstrecken",
+   "aliases": [
+    "Trizepsstrecken Überkopf"
+   ],
+   "muscle": "Trizeps",
+   "secondary": [],
+   "equipment": "Kurzhantel",
+   "level": "Einsteiger",
+   "steps": [
+    "Aufrecht stehen oder sitzen, eine Hantel mit beiden Händen über den Kopf halten.",
+    "Die Hantel hinter dem Kopf absenken, Ellbogen zeigen nach oben.",
+    "Die Arme wieder strecken."
+   ],
+   "tips": [
+    "Ellbogen möglichst eng halten.",
+    "Bauch anspannen, kein Hohlkreuz."
+   ],
+   "images": [
+    "/img/lib/ueberkopf-trizepsstrecken-1.jpg",
+    "/img/lib/ueberkopf-trizepsstrecken-2.jpg"
+   ]
+  },
+  {
+   "name": "Kniebeugen",
+   "aliases": [
+    "Kniebeuge",
+    "Squat"
+   ],
+   "muscle": "Beine",
+   "secondary": [
+    "Gesäß",
+    "Rücken",
+    "Bauch"
+   ],
+   "equipment": "Langhantel",
+   "level": "Fortgeschritten",
+   "steps": [
+    "Stange auf dem oberen Rücken (nicht auf dem Nacken) ablegen, etwa schulterbreit stehen, Füße leicht nach außen.",
+    "Hüfte nach hinten und unten schieben, Knie folgen den Fußspitzen, Rücken bleibt gerade.",
+    "So tief gehen, wie es mit stabilem Rücken möglich ist.",
+    "Mit Druck durch die ganze Fußsohle wieder aufrichten."
+   ],
+   "tips": [
+    "Immer im Rack mit Sicherheitsarmen trainieren.",
+    "Mit leichtem Gewicht oder Goblet-Squats die Technik lernen."
+   ],
+   "images": [
+    "/img/lib/kniebeugen-1.jpg",
+    "/img/lib/kniebeugen-2.jpg"
+   ]
+  },
+  {
+   "name": "Beinpresse",
+   "muscle": "Beine",
+   "secondary": [
+    "Gesäß"
+   ],
+   "equipment": "Maschine",
+   "level": "Einsteiger",
+   "steps": [
+    "Rücken und Gesäß fest am Polster, Füße etwa schulterbreit auf die Platte.",
+    "Platte kontrolliert absenken, bis die Knie etwa 90 Grad erreichen.",
+    "Durch die Fersen wieder wegdrücken."
+   ],
+   "tips": [
+    "Knie nicht durchstrecken.",
+    "Das Gesäß darf sich unten nicht vom Polster lösen."
+   ],
+   "images": [
+    "/img/lib/beinpresse-1.jpg",
+    "/img/lib/beinpresse-2.jpg"
+   ]
+  },
+  {
+   "name": "Ausfallschritte",
+   "aliases": [
+    "Ausfallschritt",
+    "Lunges"
+   ],
+   "muscle": "Beine",
+   "secondary": [
+    "Gesäß"
+   ],
+   "equipment": "Kurzhantel",
+   "level": "Einsteiger",
+   "steps": [
+    "Aufrecht stehen, in jeder Hand eine Hantel.",
+    "Mit einem großen Schritt nach vorn gehen und das hintere Knie Richtung Boden senken.",
+    "Mit dem vorderen Fuß abdrücken und zurück in den Stand kommen, dann Seite wechseln."
+   ],
+   "tips": [
+    "Oberkörper bleibt aufrecht.",
+    "Das vordere Knie bleibt über dem Fuß, nicht nach innen kippen."
+   ],
+   "images": [
+    "/img/lib/ausfallschritte-1.jpg",
+    "/img/lib/ausfallschritte-2.jpg"
+   ]
+  },
+  {
+   "name": "Beinstrecker",
+   "aliases": [
+    "Beinstrecken"
+   ],
+   "muscle": "Beine",
+   "secondary": [],
+   "equipment": "Maschine",
+   "level": "Einsteiger",
+   "steps": [
+    "Sitz so einstellen, dass die Knie auf Höhe der Drehachse liegen, Polster knapp oberhalb der Füße.",
+    "Beine nach vorn strecken und oben kurz anspannen.",
+    "Langsam wieder absenken."
+   ],
+   "tips": [
+    "Keine ruckartigen Bewegungen, Knie schonen.",
+    "Oben nicht hart durchstrecken."
+   ],
+   "images": [
+    "/img/lib/beinstrecker-1.jpg",
+    "/img/lib/beinstrecker-2.jpg"
+   ]
+  },
+  {
+   "name": "Beinbeuger",
+   "aliases": [
+    "Beinbeugen",
+    "Beinbeuger liegend"
+   ],
+   "muscle": "Beine",
+   "secondary": [
+    "Waden"
+   ],
+   "equipment": "Maschine",
+   "level": "Einsteiger",
+   "steps": [
+    "Bauchlings oder sitzend einstellen, Polster direkt oberhalb der Fersen.",
+    "Die Fersen Richtung Gesäß ziehen.",
+    "Langsam in die Ausgangsposition zurückführen."
+   ],
+   "tips": [
+    "Das Becken bleibt auf dem Polster liegen.",
+    "Bewegung bewusst kontrolliert ausführen."
+   ],
+   "images": [
+    "/img/lib/beinbeuger-1.jpg",
+    "/img/lib/beinbeuger-2.jpg"
+   ]
+  },
+  {
+   "name": "Rumänisches Kreuzheben",
+   "aliases": [
+    "Rumänisches Kreuzheben Langhantel",
+    "RDL"
+   ],
+   "muscle": "Beine",
+   "secondary": [
+    "Gesäß",
+    "Rücken"
+   ],
+   "equipment": "Langhantel",
+   "level": "Fortgeschritten",
+   "steps": [
+    "Aufrecht stehen, Stange vor den Oberschenkeln halten, Knie leicht gebeugt.",
+    "Hüfte weit nach hinten schieben, die Stange gleitet dicht am Bein nach unten.",
+    "Absenken, bis die Rückseite der Oberschenkel deutlich gedehnt wird.",
+    "Hüfte nach vorn schieben und aufrichten."
+   ],
+   "tips": [
+    "Rücken bleibt die ganze Zeit gerade.",
+    "Die Bewegung kommt aus der Hüfte, nicht aus dem Rücken."
+   ],
+   "images": [
+    "/img/lib/rumaenisches-kreuzheben-1.jpg",
+    "/img/lib/rumaenisches-kreuzheben-2.jpg"
+   ]
+  },
+  {
+   "name": "Bulgarian Split Squats",
+   "aliases": [
+    "Bulgarische Kniebeugen",
+    "Bulgarian Split Squat"
+   ],
+   "muscle": "Beine",
+   "secondary": [
+    "Gesäß"
+   ],
+   "equipment": "Kurzhantel",
+   "level": "Fortgeschritten",
+   "steps": [
+    "Einen Fuß hinten auf eine Bank legen, den anderen etwa einen großen Schritt davor aufsetzen.",
+    "Mit aufrechtem Oberkörper in die Knie gehen, bis der vordere Oberschenkel etwa waagerecht ist.",
+    "Durch den vorderen Fuß wieder hochdrücken."
+   ],
+   "tips": [
+    "Ohne Gewicht üben, bis das Gleichgewicht sitzt.",
+    "Eine Seite nach der anderen trainieren."
+   ],
+   "images": [
+    "/img/lib/bulgarian-split-squats-1.jpg",
+    "/img/lib/bulgarian-split-squats-2.jpg"
+   ]
+  },
+  {
+   "name": "Hip Thrusts",
+   "aliases": [
+    "Hip Thrust"
+   ],
+   "muscle": "Gesäß",
+   "secondary": [
+    "Beine"
+   ],
+   "equipment": "Langhantel",
+   "level": "Fortgeschritten",
+   "steps": [
+    "Oberen Rücken an eine Bank lehnen, Stange mit Polster auf der Hüfte, Füße hüftbreit aufgestellt.",
+    "Die Hüfte kraftvoll nach oben drücken, bis Oberkörper und Oberschenkel eine Linie bilden.",
+    "Oben kurz anspannen, kontrolliert absenken."
+   ],
+   "tips": [
+    "Kinn leicht zur Brust, Rippen unten halten, kein Hohlkreuz.",
+    "Das Gesäß arbeitet, nicht der untere Rücken."
+   ],
+   "images": [
+    "/img/lib/hip-thrusts-1.jpg",
+    "/img/lib/hip-thrusts-2.jpg"
+   ]
+  },
+  {
+   "name": "Glute Bridge",
+   "aliases": [
+    "Beckenheben"
+   ],
+   "muscle": "Gesäß",
+   "secondary": [
+    "Beine"
+   ],
+   "equipment": "Körpergewicht",
+   "level": "Einsteiger",
+   "steps": [
+    "Auf dem Rücken liegen, Füße hüftbreit aufstellen, Arme neben dem Körper.",
+    "Die Hüfte anheben, bis Schultern, Hüfte und Knie eine Linie bilden.",
+    "Oben das Gesäß anspannen, dann langsam absenken."
+   ],
+   "tips": [
+    "Fersen in den Boden drücken.",
+    "Schwerer machen: einbeinig oder mit Gewicht auf der Hüfte."
+   ],
+   "images": [
+    "/img/lib/glute-bridge-1.jpg",
+    "/img/lib/glute-bridge-2.jpg"
+   ]
+  },
+  {
+   "name": "Hip Abduktion",
+   "aliases": [
+    "Abduktoren",
+    "Abduktorenmaschine"
+   ],
+   "muscle": "Gesäß",
+   "secondary": [],
+   "equipment": "Maschine",
+   "level": "Einsteiger",
+   "steps": [
+    "Aufrecht in die Maschine setzen, Polster außen an den Knien.",
+    "Die Beine kontrolliert nach außen drücken.",
+    "Langsam wieder zusammenführen."
+   ],
+   "tips": [
+    "Rücken angelehnt, Oberkörper ruhig.",
+    "Mit moderatem Gewicht und vielen Wiederholungen arbeiten."
+   ],
+   "images": [
+    "/img/lib/hip-abduktion-1.jpg",
+    "/img/lib/hip-abduktion-2.jpg"
+   ]
+  },
+  {
+   "name": "Plank",
+   "aliases": [
+    "Unterarmstütz"
+   ],
+   "muscle": "Bauch",
+   "secondary": [
+    "Schultern",
+    "Rücken"
+   ],
+   "equipment": "Körpergewicht",
+   "level": "Einsteiger",
+   "steps": [
+    "Auf die Unterarme stützen, Ellbogen unter den Schultern, Beine gestreckt.",
+    "Körper in einer geraden Linie halten, Bauch, Gesäß und Oberschenkel anspannen.",
+    "Position halten und ruhig weiteratmen."
+   ],
+   "tips": [
+    "Becken nicht absacken lassen und nicht zu hoch schieben.",
+    "Lieber kürzer halten und sauber bleiben."
+   ],
+   "images": [
+    "/img/lib/plank-1.jpg",
+    "/img/lib/plank-2.jpg"
+   ]
+  },
+  {
+   "name": "Crunches am Kabel",
+   "aliases": [
+    "Kabelcrunch",
+    "Kabel-Crunch"
+   ],
+   "muscle": "Bauch",
+   "secondary": [],
+   "equipment": "Kabel",
+   "level": "Einsteiger",
+   "steps": [
+    "Kniend vor dem oberen Kabelzug, das Seil mit beiden Händen neben dem Kopf halten.",
+    "Den Oberkörper aus dem Bauch heraus nach unten rollen, Ellbogen Richtung Oberschenkel.",
+    "Kontrolliert wieder aufrichten."
+   ],
+   "tips": [
+    "Hüfte bleibt in Position, die Bewegung kommt aus dem Bauch.",
+    "Nicht mit den Armen ziehen."
+   ],
+   "images": [
+    "/img/lib/crunches-am-kabel-1.jpg",
+    "/img/lib/crunches-am-kabel-2.jpg"
+   ]
+  },
+  {
+   "name": "Beinheben hängend",
+   "aliases": [
+    "Hängendes Beinheben",
+    "Knieheben hängend"
+   ],
+   "muscle": "Bauch",
+   "secondary": [
+    "Unterarme"
+   ],
+   "equipment": "Körpergewicht",
+   "level": "Fortgeschritten",
+   "steps": [
+    "An einer Stange hängen oder in den Armstützen einer Beinhebe-Station, Körper ruhig.",
+    "Die Knie oder gestreckten Beine kontrolliert nach oben heben, Becken leicht aufrollen.",
+    "Langsam wieder absenken, ohne zu schwingen."
+   ],
+   "tips": [
+    "Einsteiger: Knie angewinkelt heben.",
+    "Kein Schwung aus dem Körper."
+   ],
+   "images": [
+    "/img/lib/beinheben-haengend-1.jpg",
+    "/img/lib/beinheben-haengend-2.jpg"
+   ]
+  },
+  {
+   "name": "Wadenheben",
+   "aliases": [
+    "Wadenheben stehend",
+    "Wadenheben Maschine"
+   ],
+   "muscle": "Waden",
+   "secondary": [],
+   "equipment": "Maschine",
+   "level": "Einsteiger",
+   "steps": [
+    "Mit den Fußballen auf die Plattform stellen, Fersen hängen frei, Schultern unter dem Polster.",
+    "Auf die Zehenspitzen hochdrücken und oben kurz halten.",
+    "Die Fersen langsam bis zur Dehnung absenken."
+   ],
+   "tips": [
+    "Volle Bewegungsweite nutzen.",
+    "Langsame Wiederholungen bringen mehr als Schwung."
+   ],
+   "images": [
+    "/img/lib/wadenheben-1.jpg",
+    "/img/lib/wadenheben-2.jpg"
+   ]
+  },
+  {
+   "name": "Wadenheben sitzend",
+   "muscle": "Waden",
+   "secondary": [],
+   "equipment": "Maschine",
+   "level": "Einsteiger",
+   "steps": [
+    "Sitzen, Polster auf den Oberschenkeln fixieren, Fußballen auf die Plattform.",
+    "Fersen anheben und oben kurz anspannen.",
+    "Langsam absenken, bis die Waden gedehnt werden."
+   ],
+   "tips": [
+    "Trainiert den tiefer liegenden Wadenmuskel stärker als die stehende Variante.",
+    "Nicht federn, sondern kontrolliert arbeiten."
+   ],
+   "images": [
+    "/img/lib/wadenheben-sitzend-1.jpg",
+    "/img/lib/wadenheben-sitzend-2.jpg"
+   ]
+  }
+ ]
 }

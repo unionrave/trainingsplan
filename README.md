@@ -8,6 +8,7 @@ Mehrere Personen mit eigenem Plan und Verlauf, keine externen Abhängigkeiten (N
 - **Pausentimer:** startet nach jedem abgehakten Satz, mit Signalton und Vibration. Standard-Pause und Pause pro Übung einstellbar, +/−15 Sekunden, überspringen
 - **Plan:** Tage und Übungen anlegen, umbenennen, sortieren, löschen. Übungsnamen werden aus der Bibliothek vorgeschlagen. Pro Übung wahlweise „alle Sätze gleich" oder jeder Satz einzeln geplant (Gewicht, Wiederholungen, Aufwärmsatz), z. B. für Pyramidensätze
 - **Übungsbibliothek:** 40 Übungen mit Ausführung und Tipps, durchsuchbar und filterbar nach Muskelgruppe und Gerät. Übungen lassen sich direkt in einen Trainingstag übernehmen, eigene Übungen sind möglich
+- **Übungsfotos:** Alle 40 Bibliotheksübungen haben zwei Bilder (Start- und Endposition). Zusätzlich lässt sich pro Person ein eigenes Foto der Maschine oder Übung hinzufügen (Handykamera oder Galerie), das dann zuerst angezeigt wird. Die Vorschau erscheint im Training und in der Bibliothek
 - **Verlauf:** Gewichtsdiagramm pro Übung und Liste aller Einheiten
 - **PIN pro Person:** 4–8 Ziffern, ändern jederzeit möglich
 - **Design:** dunkler Hallenboden-Look mit Hantelscheibe im Hintergrund, passendes helles Design (folgt der Geräteeinstellung), Sätze als Hantelscheiben, Pausentimer als Ring
@@ -21,8 +22,9 @@ trainingsplan/
 │   ├── server.js
 │   ├── index.html
 │   ├── library.json     Übungsbibliothek, frei editierbar
+│   ├── img/lib/         Übungsbilder der Bibliothek
 │   └── fonts/           Schriften (Big Shoulders Display, Barlow, SIL OFL), lokal gebündelt
-└── data/                Pläne und PINs (wird nicht ins Repo übernommen)
+└── data/                Pläne, PINs und hochgeladene Fotos (data/img) (wird nicht ins Repo übernommen)
 ```
 
 ## Installation auf Unraid
@@ -53,3 +55,6 @@ Die Übungen stehen in `app/library.json` (Name, Muskelgruppe, Gerät, Ausführu
 - PINs werden nur als Hash gespeichert. Nach 5 falschen Versuchen wird der Zugang für 5 Minuten gesperrt.
 - Die Trainer-PIN steht in der Compose-Datei (`TRAINER_PIN`). Wird sie geändert, den Container neu starten.
 - Die App ist für das Heimnetz gedacht. Für den Zugriff von außen immer einen Reverse Proxy mit HTTPS davorschalten, da PINs sonst unverschlüsselt übertragen werden.
+
+## Bildnachweis
+Die Übungsbilder stammen aus der [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (gemeinfrei, Unlicense) und wurden verkleinert. Eigene Fotos liegen in `data/img` und werden mit den Plänen gesichert.

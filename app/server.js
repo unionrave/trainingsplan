@@ -140,6 +140,24 @@ function readBody(req) {
   });
 }
 
+function readRaw(req, max) {
+  return new Promise((resolve, reject) => {
+    let size = 0; const chunks = [];
+    req.on('data', (c) => { size += c.length; if (size > max) { reject(new Error('Bild zu groß')); req.destroy(); } else chunks.push(c); });
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+const IMG_DIR = path.join(DATA_DIR, 'img');
+fs.mkdirSync(IMG_DIR, { recursive: true });
+const IMG_TYPES = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+function imgExt(b) { // Dateityp an den ersten Bytes erkennen, nicht am Namen
+  if (b.length > 12 && b[0] === 0xff && b[1] === 0xd8) return 'jpg';
+  if (b.length > 12 && b.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
+  if (b.length > 12 && b.slice(0, 4).toString() === 'RIFF' && b.slice(8, 12).toString() === 'WEBP') return 'webp';
+  return null;
+}
+
 function send(res, code, body, type = 'application/json; charset=utf-8') {
   res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store' });
   res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
@@ -163,6 +181,15 @@ const server = http.createServer(async (req, res) => {
         return res.end(buf);
       } catch { return send(res, 404, { error: 'Nicht gefunden' }); }
     }
+    // Übungsfotos: mitgelieferte (img/lib) und hochgeladene (DATA_DIR/img), Dateinamen sind nicht erratbar
+    const img = method === 'GET' && p.match(/^\/img\/(lib|u)\/([a-z0-9-]+\.(?:jpg|png|webp))$/);
+    if (img) {
+      try {
+        const buf = fs.readFileSync(path.join(img[1] === 'lib' ? path.join(__dirname, 'img', 'lib') : IMG_DIR, img[2]));
+        res.writeHead(200, { 'Content-Type': IMG_TYPES[img[2].split('.').pop()], 'Cache-Control': 'public, max-age=86400' });
+        return res.end(buf);
+      } catch { return send(res, 404, { error: 'Nicht gefunden' }); }
+    }
     if (p === '/healthz') return send(res, 200, { ok: true });
     if (!p.startsWith('/api/')) return send(res, 404, { error: 'Nicht gefunden' });
 
@@ -170,6 +197,17 @@ const server = http.createServer(async (req, res) => {
 
     if (p === '/api/session' && method === 'GET') {
       return a ? send(res, 200, { role: a.r, id: a.id || null }) : send(res, 401, { error: 'Nicht angemeldet' });
+    }
+
+    if (p === '/api/img' && method === 'POST') {
+      const cu = a && a.r === 'u' ? read(a.id) : null;
+      if (!a || (a.r === 'u' && !(cu && a.k === fp(cu)))) return send(res, 401, { error: 'Nicht angemeldet' });
+      const buf = await readRaw(req, 2.5e6);
+      const ext = imgExt(buf);
+      if (!ext) return send(res, 400, { error: 'Nur JPG-, PNG- oder WebP-Bilder erlaubt' });
+      const name = crypto.randomBytes(12).toString('hex') + '.' + ext;
+      fs.writeFileSync(path.join(IMG_DIR, name), buf);
+      return send(res, 201, { url: '/img/u/' + name });
     }
 
     // Personenliste: Namen sind öffentlich (für die Auswahl), Statistiken nur für den Trainer
