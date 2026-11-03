@@ -4,7 +4,7 @@ Interaktiver Trainingsplan fürs Fitnessstudio als kleine Web-App, gedacht für 
 Mehrere Personen mit eigenem Plan und Verlauf, keine externen Abhängigkeiten (Node.js, JSON-Dateien als Speicher).
 
 ## Funktionen
-- **Training:** Trainingstag wählen, Sätze abhaken, Gewicht und Wiederholungen eintragen, Einheit abschließen
+- **Training:** Trainingstag wählen, Sätze abhaken, Gewicht und Wiederholungen pro Satz eintragen (die Werte der letzten Einheit sind pro Satz vorbelegt), Einheit abschließen
 - **Pausentimer:** startet nach jedem abgehakten Satz, mit Signalton und Vibration. Standard-Pause und Pause pro Übung einstellbar, +/−15 Sekunden, überspringen
 - **Plan:** Tage und Übungen anlegen, umbenennen, sortieren, löschen. Übungsnamen werden aus der Bibliothek vorgeschlagen
 - **Übungsbibliothek:** 40 Übungen mit Ausführung und Tipps, durchsuchbar und filterbar nach Muskelgruppe und Gerät. Übungen lassen sich direkt in einen Trainingstag übernehmen, eigene Übungen sind möglich

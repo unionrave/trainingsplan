@@ -42,6 +42,13 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .fields{display:flex;gap:10px}
 .fields label,.exrow label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:3px;flex:1}
 .fields input,.exrow input{width:100%}
+.setrow{display:flex;align-items:center;gap:8px;margin:8px 0}
+.setrow .set{flex:none}
+.setrow .x{color:var(--muted)}
+.sf{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+.sf input{width:100%;min-width:0;text-align:center}
+.sf span{font-size:13px;color:var(--muted);white-space:nowrap}
+.setrow.done .sf input{border-color:var(--ok)}
 .exrow{border-top:1px solid var(--line);padding:10px 0}
 .exrow .name{width:100%;margin-bottom:8px;font-weight:600}
 .nums{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
@@ -172,7 +179,11 @@ async function init() {
 /* ---------- Hilfen ---------- */
 const findDay = (id) => S.days.find((d) => d.id === id);
 const findEx = (dayId, exId) => findDay(dayId).exercises.find((e) => e.id === exId);
-const sess = (day) => (S.sessions[day.id] ||= { sets: {}, weight: {}, reps: {} });
+const sess = (day) => {
+  const s = (S.sessions[day.id] ||= { sets: {} });
+  s.sets ||= {}; s.w ||= {}; s.r ||= {}; delete s.weight; delete s.reps; // w/r: Gewicht und Wiederholungen pro Satz
+  return s;
+};
 const padSets = (arr, n) => { arr = arr || []; while (arr.length < n) arr.push(false); return arr.slice(0, n); };
 const move = (arr, i, dir) => { const j = i + dir; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; };
 function lastOf(name) {
@@ -182,7 +193,17 @@ function lastOf(name) {
   }
   return null;
 }
-const allEx = () => [...lib.exercises.map((e) => ({ ...e, builtin: true })), ...((S && S.custom) || []).map((e) => ({ ...e, builtin: false }))];
+// Wert pro Satz: eingegebener Wert, sonst Satz der letzten Einheit (Gewicht) bzw. Plan-Ziel (Wiederholungen)
+const filled = (ss, k, exId, i) => { const v = (ss[k][exId] || [])[i]; return v === undefined || v === null || v === '' ? undefined : v; };
+function resW(ex, ss, i) {
+  const v = filled(ss, 'w', ex.id, i); if (v !== undefined) return v;
+  const l = lastOf(ex.name);
+  if (l && l.detail && l.detail.length) return (l.detail[i] || l.detail[l.detail.length - 1]).w;
+  return ex.weight;
+}
+const resR = (ex, ss, i) => { const v = filled(ss, 'r', ex.id, i); return v !== undefined ? v : ex.reps; };
+const fmtSets = (it) => it.detail && it.detail.length ? it.detail.map((s) => `${s.w} kg × ${s.r}`).join(' · ') : `${it.sets} × ${it.reps} mit ${it.weight} kg`;
+const allEx =() => [...lib.exercises.map((e) => ({ ...e, builtin: true })), ...((S && S.custom) || []).map((e) => ({ ...e, builtin: false }))];
 const findLib = (name) => { const n = norm(name); return allEx().find((e) => norm(e.name) === n || (e.aliases || []).some((a) => norm(a) === n)); };
 
 /* ---------- Pausentimer ---------- */
@@ -270,7 +291,7 @@ function exModal(name) {
     : '<p class="muted small" style="margin:0">Lege zuerst im Tab „Plan“ einen Trainingstag an.</p>';
   openModal(`<div class="row"><h2 class="grow" style="margin:0">${esc(e.name)}</h2><button class="ic" data-a="closeModal" aria-label="Schließen">✕</button></div>
     <div style="margin:4px 0 8px"><span class="badge">${esc(e.muscle)}</span>${(e.secondary || []).map((s) => `<span class="badge">${esc(s)}</span>`).join('')}<span class="badge">${esc(e.equipment)}</span>${e.level ? `<span class="badge">${esc(e.level)}</span>` : ''}</div>
-    ${last ? `<p class="muted small">Dein letzter Stand: ${last.weight} kg × ${esc(last.reps)} (${fmtDate(last.date)})</p>` : ''}
+    ${last ? `<p class="muted small">Dein letzter Stand: ${esc(fmtSets(last))} (${fmtDate(last.date)})</p>` : ''}
     ${e.steps && e.steps.length ? `<h2 style="font-size:16px">Ausführung</h2><ol class="steps">${e.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
     ${e.tips && e.tips.length ? `<h2 style="font-size:16px">Tipps</h2><ul class="plain">${e.tips.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}
     <div class="card" style="margin:14px 0 10px">${add}</div>
@@ -296,16 +317,16 @@ function viewTrain() {
     const arr = (ss.sets[ex.id] = padSets(ss.sets[ex.id], ex.sets));
     total += arr.length; done += arr.filter(Boolean).length;
     const last = lastOf(ex.name);
-    const w = ss.weight[ex.id] ?? ex.weight, r = ss.reps[ex.id] ?? ex.reps;
     const info = findLib(ex.name) ? `<button class="ic info" data-a="exinfo" data-name="${esc(ex.name)}" aria-label="Übungsinfo">ℹ︎</button>` : '';
     return `<div class="card">
       <div class="nameline"><div class="exname">${esc(ex.name)}</div>${info}</div>
-      <div class="muted small">Ziel: ${ex.sets} × ${esc(ex.reps)}${last ? ` · Zuletzt: ${last.weight} kg × ${esc(last.reps)} (${fmtDate(last.date)})` : ''}</div>
-      <div class="sets">${arr.map((on, i) => `<button class="set ${on ? 'on' : ''}" data-a="set" data-ex="${ex.id}" data-i="${i}" aria-label="Satz ${i + 1}">${i + 1}</button>`).join('')}</div>
-      <div class="fields">
-        <label>Gewicht (kg)<input type="number" inputmode="decimal" step="0.5" data-f="sw" data-ex="${ex.id}" value="${esc(w)}"></label>
-        <label>Wiederholungen<input type="text" inputmode="numeric" data-f="sr" data-ex="${ex.id}" value="${esc(r)}"></label>
-      </div>
+      <div class="muted small">Ziel: ${ex.sets} × ${esc(ex.reps)}${last ? ` · Zuletzt: ${esc(fmtSets(last))} (${fmtDate(last.date)})` : ''}</div>
+      <div style="margin:10px 0">${arr.map((on, i) => `<div class="setrow ${on ? 'done' : ''}">
+        <button class="set ${on ? 'on' : ''}" data-a="set" data-ex="${ex.id}" data-i="${i}" aria-label="Satz ${i + 1} abhaken">${i + 1}</button>
+        <label class="sf"><input type="number" inputmode="decimal" step="0.5" data-f="sw" data-ex="${ex.id}" data-i="${i}" value="${esc(resW(ex, ss, i))}" aria-label="Gewicht Satz ${i + 1}"><span>kg</span></label>
+        <span class="x">×</span>
+        <label class="sf"><input type="text" inputmode="numeric" data-f="sr" data-ex="${ex.id}" data-i="${i}" value="${esc(resR(ex, ss, i))}" aria-label="Wiederholungen Satz ${i + 1}"><span>Wdh.</span></label>
+      </div>`).join('')}</div>
       ${ex.note ? `<div class="muted small" style="margin-top:8px">📝 ${esc(ex.note)}</div>` : ''}
     </div>`;
   }).join('');
@@ -399,7 +420,7 @@ function viewHist() {
   if (!names.includes(histEx)) histEx = names[0];
   const list = [...S.history].reverse().map((h) => `<div class="card"><div class="hist-item"><div>
       <b>${esc(h.day)}</b> <span class="muted small">${fmtDate(h.date, true)}</span>
-      <ul class="plain">${h.items.map((i) => `<li>${esc(i.name)}: ${i.weight} kg · ${i.sets}×${esc(i.reps)}</li>`).join('')}</ul></div>
+      <ul class="plain">${h.items.map((i) => `<li>${esc(i.name)}: ${esc(fmtSets(i))}</li>`).join('')}</ul></div>
       <button class="ic danger" data-a="delSession" data-id="${h.id}" title="Eintrag löschen">🗑</button></div></div>`).join('');
   return `<div class="card"><h2>Gewichtsverlauf</h2>
     <select data-f="histEx" style="width:100%">${names.map((n) => `<option ${n === histEx ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
@@ -442,11 +463,12 @@ function render() {
 function finish() {
   const day = findDay(curDay), ss = sess(day), items = [];
   day.exercises.forEach((ex) => {
-    const n = (ss.sets[ex.id] || []).filter(Boolean).length;
-    if (!n) return;
-    const w = num(ss.weight[ex.id] ?? ex.weight), r = String(ss.reps[ex.id] ?? ex.reps);
-    items.push({ name: ex.name, weight: w, reps: r, sets: n, planned: ex.sets });
-    ex.weight = w; // Plan-Gewicht für das nächste Mal übernehmen
+    const detail = [];
+    padSets(ss.sets[ex.id], ex.sets).forEach((on, i) => { if (on) detail.push({ w: num(resW(ex, ss, i)), r: String(resR(ex, ss, i)) }); });
+    if (!detail.length) return;
+    const top = detail.reduce((a, b) => (b.w >= a.w ? b : a)); // schwerster Satz für Verlauf und Diagramm
+    items.push({ name: ex.name, weight: top.w, reps: top.r, sets: detail.length, planned: ex.sets, detail });
+    ex.weight = top.w; // Plan-Gewicht für das nächste Mal übernehmen
   });
   if (!items.length) { toast('Noch keine Sätze abgehakt'); return; }
   S.history.push({ id: rid(), date: new Date().toISOString(), day: day.name, items });
@@ -587,8 +609,19 @@ document.addEventListener('input', (e) => {
       : v;
   }
   else if (f === 'set.rest') S.settings.rest = Math.max(10, Math.min(900, parseInt(v) || 90));
-  else if (f === 'sw') sess(findDay(curDay)).weight[d.ex] = v;
-  else if (f === 'sr') sess(findDay(curDay)).reps[d.ex] = v;
+  else if (f === 'sw' || f === 'sr') {
+    const k = f === 'sw' ? 'w' : 'r', day = findDay(curDay), ex = findEx(day.id, d.ex), ss = sess(day), i = +d.i;
+    const res = (j) => String(k === 'w' ? resW(ex, ss, j) : resR(ex, ss, j));
+    const old = res(i), arr = (ss[k][ex.id] ||= []), done = ss.sets[ex.id] || [];
+    // Folgesätze, die bisher denselben Wert hatten, ziehen mit (einzeln abweichende bleiben unverändert)
+    for (let j = i + 1; j < ex.sets; j++) {
+      if (done[j] || res(j) !== old) continue;
+      arr[j] = v;
+      const inp = document.querySelector(`[data-f="${f}"][data-ex="${d.ex}"][data-i="${j}"]`);
+      if (inp) inp.value = v;
+    }
+    arr[i] = v;
+  }
   else return;
   save();
 });
