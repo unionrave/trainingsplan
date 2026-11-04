@@ -148,6 +148,38 @@ function readRaw(req, max) {
     req.on('error', reject);
   });
 }
+const COMMONS = process.env.COMMONS_API || 'https://commons.wikimedia.org/w/api.php';
+const IMG_HOST = process.env.IMG_HOST || 'upload.wikimedia.org'; // nur von hier werden Bilder geladen
+const UA = 'Trainingsplan/1.0 (selbst gehostete Trainingsplan-App)';
+const stripHtml = (h) => String(h || '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/\s+/g, ' ').trim().slice(0, 120);
+async function searchImages(q) {
+  const u = new URL(COMMONS);
+  Object.entries({ action: 'query', generator: 'search', gsrnamespace: '6', gsrlimit: '18', gsrsearch: q + ' filetype:bitmap', prop: 'imageinfo', iiprop: 'url|mime|extmetadata', iiurlwidth: '640', format: 'json', origin: '*' }).forEach(([k, v]) => u.searchParams.set(k, v));
+  const r = await fetch(u, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(12000) });
+  if (!r.ok) throw new Error('Status ' + r.status);
+  const j = await r.json();
+  return Object.values((j.query && j.query.pages) || {})
+    .sort((x, y) => (x.index || 0) - (y.index || 0))
+    .map((pg) => {
+      const ii = pg.imageinfo && pg.imageinfo[0]; if (!ii || !/^image\/(jpeg|png|webp)$/.test(ii.mime || '')) return null;
+      const md = ii.extmetadata || {};
+      return { thumb: ii.thumburl || ii.url, title: String(pg.title || '').replace(/^File:/, '').replace(/\.\w+$/, '').slice(0, 90),
+        credit: [stripHtml(md.Artist && md.Artist.value) || 'Unbekannt', stripHtml(md.LicenseShortName && md.LicenseShortName.value)].filter(Boolean).join(', '), page: ii.descriptionurl || '' };
+    })
+    .filter((x) => x && x.thumb);
+}
+async function fetchImage(url) {
+  let u; try { u = new URL(url); } catch { throw new Error('Ungültige Adresse'); }
+  if (u.hostname !== IMG_HOST || !['https:', 'http:'].includes(u.protocol) || (u.protocol === 'http:' && !process.env.IMG_HOST)) throw new Error('Nur Bilder von ' + IMG_HOST + ' erlaubt');
+  const r = await fetch(u, { headers: { 'User-Agent': UA }, redirect: 'error', signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error('Status ' + r.status);
+  const buf = Buffer.from(await r.arrayBuffer());
+  if (buf.length > 3e6) throw new Error('Bild zu groß');
+  const ext = imgExt(buf); if (!ext) throw new Error('Kein gültiges Bild');
+  const name = crypto.randomBytes(12).toString('hex') + '.' + ext;
+  fs.writeFileSync(path.join(IMG_DIR, name), buf);
+  return '/img/u/' + name;
+}
 const IMG_DIR = path.join(DATA_DIR, 'img');
 fs.mkdirSync(IMG_DIR, { recursive: true });
 const IMG_TYPES = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
@@ -208,6 +240,24 @@ const server = http.createServer(async (req, res) => {
       const name = crypto.randomBytes(12).toString('hex') + '.' + ext;
       fs.writeFileSync(path.join(IMG_DIR, name), buf);
       return send(res, 201, { url: '/img/u/' + name });
+    }
+
+    // Bildersuche im Internet (Wikimedia Commons, freie Lizenzen). Der Server sucht und lädt, der Browser kontaktiert keine Fremdseite.
+    if ((p === '/api/imgsearch' && method === 'GET') || (p === '/api/imgfetch' && method === 'POST')) {
+      const cu = a && a.r === 'u' ? read(a.id) : null;
+      if (!a || (a.r === 'u' && !(cu && a.k === fp(cu)))) return send(res, 401, { error: 'Nicht angemeldet' });
+      try {
+        if (method === 'GET') {
+          const q = String(new URL(req.url, 'http://x').searchParams.get('q') || '').trim().slice(0, 80);
+          if (q.length < 2) return send(res, 400, { error: 'Bitte einen Suchbegriff eingeben' });
+          return send(res, 200, { results: await searchImages(q) });
+        }
+        const body = await readBody(req);
+        const url = String(body.url || '');
+        return send(res, 201, { url: await fetchImage(url) });
+      } catch (e) {
+        return send(res, 502, { error: 'Bildersuche nicht erreichbar: ' + String(e.message || e) });
+      }
     }
 
     // Personenliste: Namen sind öffentlich (für die Auswahl), Statistiken nur für den Trainer

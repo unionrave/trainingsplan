@@ -156,8 +156,13 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .gallery figure:only-child{flex-basis:100%}
 .gallery img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
 .gallery figcaption{position:absolute;left:8px;top:8px;background:var(--warn);color:#2a2000;font:600 12px var(--body);padding:2px 9px;border-radius:999px}
-.photobtns{margin:0 0 10px}
-.photobtns .btn{text-align:center;cursor:pointer}
+.photobtns{margin:0 0 10px;flex-wrap:wrap}
+.photobtns .btn{flex:1 1 auto;white-space:nowrap;text-align:center;cursor:pointer;padding:11px 12px}
+#isRes{margin-top:12px}
+.isgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px}
+.isitem{padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--field);color:var(--text);cursor:pointer;text-align:left;font:500 12px/1.3 var(--body)}
+.isitem img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.isitem span{display:block;padding:6px 8px 8px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 /* Verlauf, Listen, Plaketten */
 .chart{width:100%;height:auto;margin:8px 0}
 .chart text{fill:var(--muted);font-size:12px}
@@ -229,7 +234,7 @@ const saveAuth = () => { try { localStorage.setItem('tp-auth', JSON.stringify(au
 /* ---------- API ---------- */
 async function api(path, opts = {}) {
   const m = path.match(/^\/users\/([a-z0-9-]+)/);
-  const t = auth.trainer || (m && auth.tokens[m[1]]) || '';
+  const t = auth.trainer || (m && auth.tokens[m[1]]) || (!m && uid && auth.tokens[uid]) || '';
   const r = await fetch('/api' + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: 'Bearer ' + t } : {}) } });
   const data = await r.json().catch(() => null);
   if (!r.ok) { const e = new Error((data && data.error) || ('Fehler ' + r.status)); e.status = r.status; throw e; }
@@ -277,7 +282,7 @@ function save() { pending = true; status('Speichert…'); clearTimeout(saveTimer
 async function flush() { if (pending) { clearTimeout(saveTimer); await doSave(); } }
 
 function ensure() {
-  S.days = S.days || []; S.history = S.history || []; S.sessions = S.sessions || {}; S.custom = S.custom || []; S.photos = S.photos || {};
+  S.days = S.days || []; S.history = S.history || []; S.sessions = S.sessions || {}; S.custom = S.custom || []; S.photos = S.photos || {}; S.credits = S.credits || {};
   S.settings = Object.assign({ rest: 90, auto: true, sound: true, vibrate: true }, S.settings || {});
 }
 function authFail(id) {
@@ -425,10 +430,22 @@ function customModal() {
     <select id="cEquip">${lib.equipment.map((m) => `<option>${esc(m)}</option>`).join('')}</select>
     <textarea id="cSteps" placeholder="Ausführung (ein Schritt pro Zeile, optional)"></textarea></div>${modalBtns('saveCustom', 'Speichern')}`);
 }
+let imgRes = [];
+function searchModal(name, q) {
+  q = q == null ? name : q; imgRes = [];
+  openModal(`<div class="row"><h2 class="grow" style="margin:0">Bild suchen</h2><button class="ic" data-a="exinfo" data-name="${esc(name)}" aria-label="Zurück">✕</button></div>
+    <p class="muted small" style="margin:4px 0 10px">Sucht freie Bilder auf Wikimedia Commons. Englische Begriffe finden oft mehr, z. B. „leg press machine“.</p>
+    <div class="row"><input id="isQ" class="grow" type="search" value="${esc(q)}" maxlength="80" placeholder="Gerät oder Übung"><button class="btn primary" data-a="doImgSearch" data-name="${esc(name)}">Suchen</button></div>
+    <div id="isRes"></div>`);
+}
+function searchResHTML(name) {
+  return imgRes.length ? `<div class="isgrid">${imgRes.map((r, i) => `<button class="isitem" data-a="pickImg" data-i="${i}" data-name="${esc(name)}"><img src="${esc(r.thumb)}" alt="${esc(r.title)}" loading="lazy"><span>${esc(r.title)}</span></button>`).join('')}</div>
+    <p class="muted small">Antippen übernimmt das Bild. Urheber und Lizenz werden mitgespeichert.</p>` : '<p class="muted">Keine Bilder gefunden. Probier einen anderen oder englischen Suchbegriff.</p>';
+}
 function galleryHTML(e) {
   const own = S.photos && S.photos[norm(e.name)], imgs = imgsOf(e.name);
-  const pics = imgs.length ? `<div class="gallery">${imgs.map((u, i) => `<figure><img src="${esc(u)}" alt="${esc(e.name)}, Bild ${i + 1}" loading="lazy">${own && i === 0 ? '<figcaption>Dein Foto</figcaption>' : ''}</figure>`).join('')}</div>` : '';
-  return `${pics}<div class="row photobtns"><label class="btn grow">📷 ${own ? 'Foto ersetzen' : 'Eigenes Foto hinzufügen'}<input type="file" accept="image/*" hidden data-f="photo" data-name="${esc(e.name)}"></label>${own ? `<button class="btn danger" data-a="rmPhoto" data-name="${esc(e.name)}">Entfernen</button>` : ''}</div>`;
+  const pics = imgs.length ? `<div class="gallery">${imgs.map((u, i) => `<figure><img src="${esc(u)}" alt="${esc(e.name)}, Bild ${i + 1}" loading="lazy">${own && i === 0 ? `<figcaption>${S.credits && S.credits[norm(e.name)] ? esc(S.credits[norm(e.name)]) : 'Dein Foto'}</figcaption>` : ''}</figure>`).join('')}</div>` : '';
+  return `${pics}<div class="row photobtns"><label class="btn grow">📷 ${own ? 'Foto ersetzen' : 'Eigenes Foto hinzufügen'}<input type="file" accept="image/*" hidden data-f="photo" data-name="${esc(e.name)}"></label><button class="btn" data-a="imgSearch" data-name="${esc(e.name)}">🔎 Im Internet suchen</button>${own ? `<button class="btn danger" data-a="rmPhoto" data-name="${esc(e.name)}">Entfernen</button>` : ''}</div>`;
 }
 function exModal(name) {
   const e = findLib(name); if (!e) return;
@@ -720,7 +737,25 @@ async function act(a, d) {
     }
 
     case 'exinfo': return exModal(d.name);
-    case 'rmPhoto': delete S.photos[norm(d.name)]; save(); exModal(d.name); render(); return;
+    case 'imgSearch': return searchModal(d.name);
+    case 'doImgSearch': {
+      const q = $('#isQ').value.trim(); if (q.length < 2) return toast('Bitte einen Suchbegriff eingeben');
+      const box = $('#isRes'); box.innerHTML = '<p class="muted">Suche läuft…</p>';
+      try { const r = await api('/imgsearch?q=' + encodeURIComponent(q)); imgRes = r.results; box.innerHTML = searchResHTML(d.name); }
+      catch (e) { box.innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
+      return;
+    }
+    case 'pickImg': {
+      const r = imgRes[+d.i]; if (!r) return;
+      toast('Bild wird geladen…');
+      try {
+        const out = await api('/imgfetch', { method: 'POST', body: JSON.stringify({ url: r.thumb }) });
+        S.photos[norm(d.name)] = out.url; S.credits[norm(d.name)] = (r.credit + ' · Wikimedia Commons').slice(0, 160);
+        save(); exModal(d.name); render(); toast('Bild gespeichert');
+      } catch (e) { toast(e.message); }
+      return;
+    }
+    case 'rmPhoto': delete S.photos[norm(d.name)]; delete S.credits[norm(d.name)]; save(); exModal(d.name); render(); return;
     case 'lf': libF[d.k] = libF[d.k] === d.v ? '' : d.v; render(); return;
     case 'customEx': return customModal();
     case 'saveCustom': {
@@ -729,7 +764,7 @@ async function act(a, d) {
       if (findLib(name)) return toast('Diese Übung gibt es schon');
       const steps = $('#cSteps').value.split('\n').map((s) => s.trim()).filter(Boolean);
       S.custom.push({ id: rid(), name, muscle: $('#cMuscle').value, equipment: $('#cEquip').value, secondary: [], steps, tips: [] });
-      closeModal(); break;
+      save(); render(); searchModal(name); return;
     }
     case 'delCustom': {
       if (!confirm('Diese eigene Übung löschen?')) return;
