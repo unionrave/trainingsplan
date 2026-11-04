@@ -145,6 +145,49 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .check input{width:auto!important}
 .title{font:800 24px/1.1 var(--display)!important}
 
+/* Druck: DIN A4, hell, nur der Plan */
+#printarea{display:none}
+@media print{
+  @page{size:A4 portrait;margin:11mm 12mm}
+  :root{color-scheme:light!important}
+  html,body{background:#fff!important;color:#111!important;padding:0!important;font-size:10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body::before,body::after{display:none!important}
+  body.printing>*:not(#printarea){display:none!important}
+  body.printing #printarea{display:block!important}
+  .pday{break-after:page;page-break-after:always;color:#111;font-family:Barlow,Arial,sans-serif}
+  .pday:last-child{break-after:auto;page-break-after:auto}
+  .phead{display:flex;justify-content:space-between;align-items:center;border-bottom:1.6pt solid #111;padding-bottom:2.5mm}
+  .pbrand{display:flex;align-items:center;gap:2.5mm;font:700 12pt var(--display);letter-spacing:.04em}
+  .pmark{width:7mm;height:7mm}
+  .pwho{font:600 11pt Barlow,Arial,sans-serif;color:#333}
+  .pdayname{font:800 27pt/1 "Big Shoulders Display",Impact,sans-serif;margin:4mm 0 3mm;color:#111}
+  .pfields{display:flex;gap:7mm;font-size:9pt;color:#444;margin-bottom:4mm}
+  .pfields span{display:flex;align-items:flex-end;gap:1.5mm;flex:1}
+  .pfields i{flex:1;border-bottom:.6pt solid #777;height:4mm}
+  .pex{display:flex;gap:3.5mm;padding:3mm 0;border-top:.6pt solid #bbb;break-inside:avoid;page-break-inside:avoid}
+  .pimg{flex:none;width:23mm;height:23mm;object-fit:cover;border-radius:2mm;border:.5pt solid #999;filter:grayscale(.15)}
+  .pbody{flex:1;min-width:0}
+  .ptitle{display:flex;align-items:baseline;gap:2.5mm}
+  .pn{flex:none;display:inline-grid;place-items:center;width:5.6mm;height:5.6mm;border-radius:50%;background:#111;color:#fff;font:700 8.5pt Barlow,Arial,sans-serif;transform:translateY(-.4mm)}
+  .pname{font:800 15pt/1 "Big Shoulders Display",Impact,sans-serif}
+  .pmeta{margin-left:auto;font-size:8.5pt;color:#555;white-space:nowrap}
+  .pnote{font-size:8.5pt;font-style:italic;color:#444;margin-top:.8mm}
+  .plast{font-size:8pt;color:#666;margin-top:.8mm}
+  .psets{display:grid;grid-template-columns:repeat(var(--n,6),1fr);gap:2mm;margin-top:2mm}
+  .pset{border:.7pt solid #666;border-radius:1.6mm;padding:1mm 1.5mm 0}
+  .pset.w{border-style:dashed}
+  .ph{display:flex;align-items:center;gap:1.4mm;font-size:8.5pt;color:#444;white-space:nowrap}
+  .ph b{font:800 10pt "Big Shoulders Display",Impact,sans-serif;color:#111}
+  .ph span{overflow:hidden;text-overflow:ellipsis}
+  .pbox{margin-left:auto;flex:none;width:3.4mm;height:3.4mm;border:.8pt solid #111;border-radius:50%}
+  .pl{height:7.4mm;border-bottom:.5pt solid #999;display:flex;align-items:flex-end}
+  .pl:last-child{border-bottom:none}
+  .pl em{font:normal 6.5pt Barlow,Arial,sans-serif;color:#777}
+  .pfoot{margin-top:5mm;break-inside:avoid}
+  .pnotes{display:grid;gap:5mm;font-size:8.5pt;color:#444}
+  .pnotes i{border-bottom:.5pt solid #999;height:3mm;display:block}
+  .pmini{margin-top:3mm;font-size:7.5pt;color:#777}
+}
 /* Übungsfotos */
 .thumb{flex:none;width:56px;height:56px;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--field);cursor:pointer}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -211,7 +254,7 @@ body[data-tab=train] #timer{bottom:88px}
 <main id="app"></main>
 <div id="timer"></div>
 <div id="modal" class="modal" hidden><div class="sheet" id="sheet"></div></div>
-<div id="toast"></div>
+<div id="toast"></div><div id="printarea" aria-hidden="true"></div>
 
 <script>
 const $ = (s) => document.querySelector(s);
@@ -430,6 +473,51 @@ function customModal() {
     <select id="cEquip">${lib.equipment.map((m) => `<option>${esc(m)}</option>`).join('')}</select>
     <textarea id="cSteps" placeholder="Ausführung (ein Schritt pro Zeile, optional)"></textarea></div>${modalBtns('saveCustom', 'Speichern')}`);
 }
+/* ---------- Drucken (DIN A4) ---------- */
+function printModal() {
+  openModal(`<div class="row"><h2 class="grow" style="margin:0">Plan drucken</h2><button class="ic" data-a="closeModal" aria-label="Schließen">✕</button></div>
+    <p class="muted small" style="margin:4px 0 10px">Pro Trainingstag eine DIN-A4-Seite mit Zielwerten und Schreibfeldern für Gewicht und Wiederholungen.</p>
+    <div class="stack">${S.days.map((d) => `<label class="check"><input type="checkbox" class="pd" value="${d.id}" checked> ${esc(d.name)} <span class="muted small">(${d.exercises.length} Übungen)</span></label>`).join('')}</div>
+    <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
+    <label class="check"><input type="checkbox" id="pImg" checked> Mit Übungsbildern</label>
+    <label class="check"><input type="checkbox" id="pLast" checked> Letzte Werte anzeigen</label>
+    ${modalBtns('doPrint', '🖨 Drucken')}`);
+}
+function printHTML(dayIds, withImg, withLast) {
+  const mark = '<svg class="pmark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#1f5fdc"/><circle cx="16" cy="16" r="10.5" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.6"/><circle cx="16" cy="16" r="4" fill="#fff"/></svg>';
+  const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return S.days.filter((d) => dayIds.includes(d.id)).map((d) => {
+    const exs = d.exercises.map((ex, n) => {
+      const u = withImg ? imgsOf(ex.name)[0] : '';
+      const cnt = ex.plan ? ex.plan.length : ex.sets;
+      const target = ex.plan ? '' : `${ex.sets} × ${esc(ex.reps)}${num(ex.weight) ? ' · ' + esc(ex.weight) + ' kg' : ''}`;
+      const sets = Array.from({ length: cnt }, (_, i) => {
+        const s = ex.plan ? ex.plan[i] : { w: ex.weight, r: ex.reps, warm: false };
+        const tg = `${num(s.w) ? esc(s.w) + ' kg × ' : ''}${esc(s.r)}`;
+        return `<div class="pset ${s.warm ? 'w' : ''}"><div class="ph"><b>${s.warm ? 'W' : i + 1}</b><span>${tg}</span><i class="pbox"></i></div><div class="pl"><em>kg</em></div><div class="pl"><em>Wdh.</em></div></div>`;
+      }).join('');
+      const last = withLast ? lastOf(ex.name) : null;
+      return `<div class="pex">${u ? `<img class="pimg" src="${esc(u)}" alt="">` : ''}<div class="pbody">
+        <div class="ptitle"><span class="pn">${n + 1}</span><span class="pname">${esc(ex.name)}</span><span class="pmeta">${target}${target ? ' · ' : ''}Pause ${fmtT(ex.rest || S.settings.rest)}</span></div>
+        ${ex.note ? `<div class="pnote">${esc(ex.note)}</div>` : ''}
+        ${last ? `<div class="plast">Zuletzt (${fmtDate(last.date)}): ${esc(fmtSets(last))}</div>` : ''}
+        <div class="psets" style="--n:${Math.min(6, Math.max(4, cnt))}">${sets}</div></div></div>`;
+    }).join('');
+    return `<section class="pday"><div class="phead"><div class="pbrand">${mark}<span>Trainingsplan</span></div><div class="pwho">${esc(S.name)}</div></div>
+      <h1 class="pdayname">${esc(d.name)}</h1>
+      <div class="pfields"><span>Datum <i></i></span><span>Beginn <i></i></span><span>Körpergewicht <i></i></span></div>
+      ${exs || '<p class="pnote">Keine Übungen in diesem Tag.</p>'}
+      <div class="pfoot"><div class="pnotes"><span>Notizen</span><i></i><i></i><i></i></div><div class="pmini">Gedruckt am ${today} · ○ Satz geschafft · W = Aufwärmsatz</div></div></section>`;
+  }).join('');
+}
+async function doPrint(dayIds, withImg, withLast) {
+  const area = $('#printarea'); area.innerHTML = printHTML(dayIds, withImg, withLast);
+  document.body.classList.add('printing');
+  await Promise.race([Promise.all([...area.querySelectorAll('img')].map((im) => im.decode().catch(() => {}))), new Promise((r) => setTimeout(r, 4000))]);
+  const done = () => { document.body.classList.remove('printing'); area.innerHTML = ''; window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  window.print();
+}
 let imgRes = [];
 function searchModal(name, q) {
   q = q == null ? name : q; imgRes = [];
@@ -497,7 +585,7 @@ function viewTrain() {
     </div>`;
   }).join('');
   return `${auth.trainer ? `<div class="muted small" style="margin-bottom:8px">👁 Trainer-Ansicht: ${esc(S.name)}</div>` : ''}
-    <div class="chips">${S.days.map((d) => `<button class="chip ${d.id === curDay ? 'on' : ''}" data-a="day" data-day="${d.id}">${esc(d.name)}</button>`).join('')}</div>
+    <div class="chips">${S.days.map((d) => `<button class="chip ${d.id === curDay ? 'on' : ''}" data-a="day" data-day="${d.id}">${esc(d.name)}</button>`).join('')}<button class="chip" data-a="printOpen" aria-label="Plan drucken">🖨</button></div>
     <div class="dayhead"><h2 class="dayname">${esc(day.name)}</h2><div class="count"><b>${done}</b>/${total}<span>Sätze</span></div></div>
     <div class="bar"><div style="width:${total ? Math.round(done / total * 100) : 0}%"></div></div>
     <div class="chips"><span class="muted small" style="align-self:center">⏱ Pause</span>${[60, 90, 120, 180].map((s) => `<button class="chip" data-a="rest" data-s="${s}">${fmtT(s)}</button>`).join('')}</div>
@@ -548,7 +636,8 @@ function viewPlan() {
     </div>`).join('')}
     <button class="btn block" style="margin-top:10px" data-a="addEx" data-day="${d.id}">＋ Übung</button>
   </div>`).join('');
-  return `<datalist id="exlist">${names.map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>${days}
+  return `<datalist id="exlist">${names.map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>
+    <button class="btn block" style="margin-bottom:14px" data-a="printOpen">🖨 Plan drucken (DIN A4)</button>${days}
     <button class="btn block" data-a="addDay">＋ Trainingstag</button>
     <div class="card" style="margin-top:14px"><h2>Pausentimer</h2>
       <div class="nums"><label>Standard-Pause (Sekunden)<input type="number" inputmode="numeric" min="10" max="900" step="5" data-f="set.rest" value="${S.settings.rest}"></label></div>
@@ -737,6 +826,13 @@ async function act(a, d) {
     }
 
     case 'exinfo': return exModal(d.name);
+    case 'printOpen': return printModal();
+    case 'doPrint': {
+      const ids = [...document.querySelectorAll('#sheet .pd:checked')].map((x) => x.value);
+      if (!ids.length) return toast('Bitte mindestens einen Tag auswählen');
+      const img = $('#pImg').checked, last = $('#pLast').checked;
+      closeModal(); return doPrint(ids, img, last);
+    }
     case 'imgSearch': return searchModal(d.name);
     case 'doImgSearch': {
       const q = $('#isQ').value.trim(); if (q.length < 2) return toast('Bitte einen Suchbegriff eingeben');
