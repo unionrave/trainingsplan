@@ -60,5 +60,8 @@ Die Übungen stehen in `app/library.json` (Name, Muskelgruppe, Gerät, Ausführu
 ## Bildersuche
 Die Suche läuft über den Server der App (Wikimedia Commons), der Container braucht dafür Internetzugang. Der Browser kontaktiert keine fremden Seiten, geladen werden nur Bilder von `upload.wikimedia.org`. Ohne Internet funktioniert alles andere weiter, nur die Suche meldet einen Fehler.
 
+## Autor
+Erstellt von Marco Weber.
+
 ## Bildnachweis
 Die Übungsbilder stammen aus der [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (gemeinfrei, Unlicense) und wurden verkleinert. Eigene Fotos liegen in `data/img` und werden mit den Plänen gesichert.

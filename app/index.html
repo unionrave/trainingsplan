@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<meta name="author" content="Marco Weber">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#0d2229" media="(prefers-color-scheme: dark)">
@@ -188,6 +189,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
   .pnotes i{border-bottom:.5pt solid #999;height:3mm;display:block}
   .pmini{margin-top:3mm;font-size:7.5pt;color:#777}
 }
+.credit{max-width:760px;margin:0 auto;padding:4px 16px 24px;text-align:center;font-size:12px;color:var(--muted)}
+@media print{.credit{display:none}}
 /* Übungsfotos */
 .thumb{flex:none;width:56px;height:56px;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--field);cursor:pointer}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -252,6 +255,7 @@ body[data-tab=train] #timer{bottom:88px}
   <nav id="tabs"></nav>
 </header>
 <main id="app"></main>
+<footer class="credit">Erstellt von Marco Weber</footer>
 <div id="timer"></div>
 <div id="modal" class="modal" hidden><div class="sheet" id="sheet"></div></div>
 <div id="toast"></div><div id="printarea" aria-hidden="true"></div>
@@ -266,6 +270,7 @@ const fmtDate = (iso, long) => new Date(iso).toLocaleDateString('de-DE', long ? 
 const fmtT = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 const PIN_RE = /^\d{4,8}$/;
 const BASE_TITLE = 'Trainingsplan';
+const CREDIT = 'Erstellt von Marco Weber';
 
 let users = [], uid = null, S = null, lib = { muscles: [], equipment: [], exercises: [] };
 let tab = 'train', curDay = null, histEx = null, saveTimer = null, pending = false, loginFor = null;
@@ -507,7 +512,7 @@ function printHTML(dayIds, withImg, withLast) {
       <h1 class="pdayname">${esc(d.name)}</h1>
       <div class="pfields"><span>Datum <i></i></span><span>Beginn <i></i></span><span>Körpergewicht <i></i></span></div>
       ${exs || '<p class="pnote">Keine Übungen in diesem Tag.</p>'}
-      <div class="pfoot"><div class="pnotes"><span>Notizen</span><i></i><i></i><i></i></div><div class="pmini">Gedruckt am ${today} · ○ Satz geschafft · W = Aufwärmsatz</div></div></section>`;
+      <div class="pfoot"><div class="pnotes"><span>Notizen</span><i></i><i></i><i></i></div><div class="pmini">${CREDIT} · Gedruckt am ${today} · ○ Satz geschafft · W = Aufwärmsatz</div></div></section>`;
   }).join('');
 }
 async function doPrint(dayIds, withImg, withLast) {
