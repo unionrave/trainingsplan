@@ -172,6 +172,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
   .pn{flex:none;display:inline-grid;place-items:center;width:5.6mm;height:5.6mm;border-radius:50%;background:#111;color:#fff;font:700 8.5pt Barlow,Arial,sans-serif;transform:translateY(-.4mm)}
   .pname{font:800 15pt/1 "Big Shoulders Display",Impact,sans-serif}
   .pmeta{margin-left:auto;font-size:8.5pt;color:#555;white-space:nowrap}
+  .pup{font:700 8pt Barlow,Arial,sans-serif;border:.8pt solid #111;border-radius:99px;padding:.2mm 2mm;white-space:nowrap}
   .pnote{font-size:8.5pt;font-style:italic;color:#444;margin-top:.8mm}
   .plast{font-size:8pt;color:#666;margin-top:.8mm}
   .psets{display:grid;grid-template-columns:repeat(var(--n,6),1fr);gap:2mm;margin-top:2mm}
@@ -191,6 +192,10 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 }
 .credit{max-width:760px;margin:0 auto;padding:4px 16px 24px;text-align:center;font-size:12px;color:var(--muted)}
 @media print{.credit{display:none}}
+.exflags{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.exflags .chip{font-size:14px;padding:7px 13px}
+.chip.up.on{background:var(--warn);border-color:transparent;color:#2a2000}
+.badge.alt{background:var(--field);color:var(--accent);border-color:var(--accent)}
 /* Übungsfotos */
 .thumb{flex:none;width:56px;height:56px;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--field);cursor:pointer}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -367,9 +372,12 @@ const findDay = (id) => S.days.find((d) => d.id === id);
 const findEx = (dayId, exId) => findDay(dayId).exercises.find((e) => e.id === exId);
 const sess = (day) => {
   const s = (S.sessions[day.id] ||= { sets: {} });
-  s.sets ||= {}; s.w ||= {}; s.r ||= {}; delete s.weight; delete s.reps; // w/r: Gewicht und Wiederholungen pro Satz
+  s.sets ||= {}; s.w ||= {}; s.r ||= {}; s.alt ||= {}; delete s.weight; delete s.reps; // w/r: Gewicht und Wiederholungen pro Satz
   return s;
 };
+const today = () => new Date().toLocaleDateString('sv-SE'); // lokales Datum als JJJJ-MM-TT
+const swapped = (ex, ss) => !!(ex.alt && ss && ss.alt && ss.alt[ex.id]);
+const eName = (ex, ss) => (swapped(ex, ss) ? ex.alt : ex.name); // Name, unter dem heute trainiert und gespeichert wird
 const padSets = (arr, n) => { arr = arr || []; while (arr.length < n) arr.push(false); return arr.slice(0, n); };
 const move = (arr, i, dir) => { const j = i + dir; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; };
 function lastOf(name) {
@@ -384,7 +392,7 @@ const filled = (ss, k, exId, i) => { const v = (ss[k][exId] || [])[i]; return v 
 function resW(ex, ss, i) {
   const v = filled(ss, 'w', ex.id, i); if (v !== undefined) return v;
   if (ex.plan && ex.plan[i]) return ex.plan[i].w;
-  const l = lastOf(ex.name);
+  const l = lastOf(eName(ex, ss));
   const det = l && l.detail ? l.detail.filter((s) => !s.warm) : [];
   if (det.length) return (det[i] || det[det.length - 1]).w;
   return ex.weight;
@@ -503,7 +511,8 @@ function printHTML(dayIds, withImg, withLast) {
       }).join('');
       const last = withLast ? lastOf(ex.name) : null;
       return `<div class="pex">${u ? `<img class="pimg" src="${esc(u)}" alt="">` : ''}<div class="pbody">
-        <div class="ptitle"><span class="pn">${n + 1}</span><span class="pname">${esc(ex.name)}</span><span class="pmeta">${target}${target ? ' · ' : ''}Pause ${fmtT(ex.rest || S.settings.rest)}</span></div>
+        <div class="ptitle"><span class="pn">${n + 1}</span><span class="pname">${esc(ex.name)}</span>${ex.up ? '<span class="pup">↑ Gewicht steigern</span>' : ''}<span class="pmeta">${target}${target ? ' · ' : ''}Pause ${fmtT(ex.rest || S.settings.rest)}</span></div>
+        ${ex.alt ? `<div class="pnote">⇄ Alternative: ${esc(ex.alt)}</div>` : ''}
         ${ex.note ? `<div class="pnote">${esc(ex.note)}</div>` : ''}
         ${last ? `<div class="plast">Zuletzt (${fmtDate(last.date)}): ${esc(fmtSets(last))}</div>` : ''}
         <div class="psets" style="--n:${Math.min(6, Math.max(4, cnt))}">${sets}</div></div></div>`;
@@ -574,11 +583,14 @@ function viewTrain() {
   const cards = day.exercises.map((ex) => {
     const arr = (ss.sets[ex.id] = padSets(ss.sets[ex.id], ex.sets));
     total += arr.length; done += arr.filter(Boolean).length;
-    const last = lastOf(ex.name);
-    const info = findLib(ex.name) ? `<button class="ic info" data-a="exinfo" data-name="${esc(ex.name)}" aria-label="Übungsinfo">ℹ︎</button>` : '';
+    const en = eName(ex, ss), sw = swapped(ex, ss), last = lastOf(en);
+    const info = findLib(en) ? `<button class="ic info" data-a="exinfo" data-name="${esc(en)}" aria-label="Übungsinfo">ℹ︎</button>` : '';
+    const upNow = ex.up && ex.upAt !== today(), upSet = ex.up && !upNow;
+    const flags = `<div class="exflags">${ex.alt ? `<button class="chip ${sw ? 'on' : ''}" data-a="altSwap" data-ex="${ex.id}">⇄ ${sw ? 'Statt ' + esc(ex.name) + ' · zurück' : 'Alternative: ' + esc(ex.alt)}</button>` : ''}<button class="chip up ${ex.up ? 'on' : ''}" data-a="upToggle" data-ex="${ex.id}">${upNow ? '↑ Heute Gewicht steigern · erledigt' : upSet ? '✓ Nächstes Mal steigern' : '↑ Nächstes Mal steigern'}</button></div>`;
     const nd = arr.filter(Boolean).length;
     return `<div class="card ex ${nd === arr.length && nd ? 'full' : nd ? 'part' : ''}">
-      <div class="nameline">${thumbHTML(ex.name)}<div class="exname">${esc(ex.name)}</div>${info}</div>
+      <div class="nameline">${thumbHTML(en)}<div class="exname">${esc(en)}</div>${info}</div>
+      ${sw ? '<div><span class="badge alt">Alternative</span></div>' : ''}
       <div class="muted small">${ex.plan ? 'Plan: ' + esc(fmtPlan(ex)) : `Ziel: ${ex.sets} × ${esc(ex.reps)}`}${last ?` · Zuletzt: ${esc(fmtSets(last))} (${fmtDate(last.date)})` : ''}</div>
       <div style="margin:10px 0">${arr.map((on, i) => `<div class="setrow ${on ? 'done' : ''}">
         <button class="set ${on ? 'on' : ''} ${isWarm(ex, i) ? 'warm' : ''}" data-a="set" data-ex="${ex.id}" data-i="${i}" aria-label="${isWarm(ex, i) ? 'Aufwärmsatz' : 'Satz'} ${i + 1} abhaken">${isWarm(ex, i) ? 'W' : i + 1}</button>
@@ -587,6 +599,7 @@ function viewTrain() {
         <label class="sf"><input type="text" inputmode="numeric" data-f="sr" data-ex="${ex.id}" data-i="${i}" value="${esc(resR(ex, ss, i))}" aria-label="Wiederholungen Satz ${i + 1}"><span>Wdh.</span></label>
       </div>`).join('')}</div>
       ${ex.note ? `<div class="muted small" style="margin-top:8px">📝 ${esc(ex.note)}</div>` : ''}
+      ${flags}
     </div>`;
   }).join('');
   return `${auth.trainer ? `<div class="muted small" style="margin-bottom:8px">👁 Trainer-Ansicht: ${esc(S.name)}</div>` : ''}
@@ -637,7 +650,9 @@ function viewPlan() {
     ${d.exercises.map((x) => `<div class="exrow">
       <input class="name" list="exlist" data-f="ex.name" data-day="${d.id}" data-ex="${x.id}" value="${esc(x.name)}" aria-label="Übung">
       ${exPlanHTML(d, x)}
-      <input class="name" style="margin:8px 0 0;font-weight:400" placeholder="Notiz (optional)" data-f="ex.note" data-day="${d.id}" data-ex="${x.id}" value="${esc(x.note)}">
+      <input class="name" list="exlist" style="margin:8px 0 0;font-weight:400" placeholder="Alternative Übung/Gerät (optional)" data-f="ex.alt" data-day="${d.id}" data-ex="${x.id}" value="${esc(x.alt)}" aria-label="Alternative Übung oder Gerät">
+      <label class="check"><input type="checkbox" data-f="ex.up" data-day="${d.id}" data-ex="${x.id}" ${x.up ? 'checked' : ''}> ↑ Gewicht beim nächsten Mal steigern</label>
+      <input class="name" style="margin:4px 0 0;font-weight:400" placeholder="Notiz (optional)" data-f="ex.note" data-day="${d.id}" data-ex="${x.id}" value="${esc(x.note)}">
     </div>`).join('')}
     <button class="btn block" style="margin-top:10px" data-a="addEx" data-day="${d.id}">＋ Übung</button>
   </div>`).join('');
@@ -753,8 +768,10 @@ function finish() {
     if (!detail.length) return;
     const work = detail.filter((s) => !s.warm), pool = work.length ? work : detail;
     const top = pool.reduce((a, b) => (b.w >= a.w ? b : a)); // schwerster Arbeitssatz für Verlauf und Diagramm
-    items.push({ name: ex.name, weight: top.w, reps: top.r, sets: detail.length, planned: ex.sets, detail });
-    if (!ex.plan) ex.weight = top.w; // Plan-Gewicht für das nächste Mal übernehmen (bei Einzelplanung bleibt der Plan unverändert)
+    const en = eName(ex, ss), prev = lastOf(en);
+    items.push({ name: en, weight: top.w, reps: top.r, sets: detail.length, planned: ex.sets, detail });
+    if (ex.up && ex.upAt !== today() && prev && top.w > prev.weight) ex.up = false; // Steigerung geschafft: Markierung zurücknehmen
+    if (!ex.plan && !swapped(ex, ss)) ex.weight = top.w; // Plan-Gewicht für das nächste Mal übernehmen (bei Einzelplanung bleibt der Plan unverändert)
   });
   if (!items.length) { toast('Noch keine Sätze abgehakt'); return; }
   S.history.push({ id: rid(), date: new Date().toISOString(), day: day.name, items });
@@ -831,6 +848,17 @@ async function act(a, d) {
     }
 
     case 'exinfo': return exModal(d.name);
+    case 'altSwap': {
+      const day = findDay(curDay), ss = sess(day), ex = findEx(day.id, d.ex);
+      ss.alt[ex.id] = !ss.alt[ex.id]; delete ss.w[ex.id]; delete ss.r[ex.id]; // Werte der anderen Übung neu vorbelegen
+      break;
+    }
+    case 'upToggle': {
+      const ex = findEx(curDay, d.ex);
+      ex.up = !ex.up; ex.upAt = today();
+      if (ex.up) toast('Beim nächsten Mal Gewicht steigern ✓');
+      break;
+    }
     case 'printOpen': return printModal();
     case 'doPrint': {
       const ids = [...document.querySelectorAll('#sheet .pd:checked')].map((x) => x.value);
@@ -974,6 +1002,7 @@ document.addEventListener('change', async (e) => {
     return;
   }
   if (f === 'histEx') { histEx = el.value; render(); return; }
+  if (f === 'ex.up') { const ex = findEx(el.dataset.day, el.dataset.ex); ex.up = el.checked; ex.upAt = today(); save(); return; }
   if (f === 'ps.warm') { findEx(el.dataset.day, el.dataset.ex).plan[+el.dataset.i].warm = el.checked; save(); render(); return; }
   if (f && f.startsWith('set.') && el.type === 'checkbox') { S.settings[f.slice(4)] = el.checked; save(); return; }
   if (f === 'userName') {
