@@ -196,6 +196,11 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .exflags .chip{font-size:14px;padding:7px 13px}
 .chip.up.on{background:var(--warn);border-color:transparent;color:#2a2000}
 .badge.alt{background:var(--field);color:var(--accent);border-color:var(--accent)}
+.altlist{display:grid;gap:8px;margin-top:10px}
+.altrow{display:flex;align-items:center;gap:10px;text-align:left;padding:8px 10px;border:1px solid var(--line);border-radius:14px;background:var(--field);color:var(--text);cursor:pointer;font:500 15px var(--body)}
+.altrow .grow{display:grid;gap:1px}.altrow small{font-size:12px}
+.altrow .thumb{width:44px;height:44px;border-radius:10px;display:block;overflow:hidden;flex:none}
+.altrow .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 /* Übungsfotos */
 .thumb{flex:none;width:56px;height:56px;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--field);cursor:pointer}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -376,8 +381,8 @@ const sess = (day) => {
   return s;
 };
 const today = () => new Date().toLocaleDateString('sv-SE'); // lokales Datum als JJJJ-MM-TT
-const swapped = (ex, ss) => !!(ex.alt && ss && ss.alt && ss.alt[ex.id]);
-const eName = (ex, ss) => (swapped(ex, ss) ? ex.alt : ex.name); // Name, unter dem heute trainiert und gespeichert wird
+const eName = (ex, ss) => { const a = ss && ss.alt && ss.alt[ex.id]; return a ? (a === true ? ex.alt || ex.name : a) : ex.name; }; // Name, unter dem heute trainiert und gespeichert wird
+const swapped = (ex, ss) => norm(eName(ex, ss)) !== norm(ex.name);
 const padSets = (arr, n) => { arr = arr || []; while (arr.length < n) arr.push(false); return arr.slice(0, n); };
 const move = (arr, i, dir) => { const j = i + dir; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; };
 function lastOf(name) {
@@ -486,6 +491,25 @@ function customModal() {
     <select id="cEquip">${lib.equipment.map((m) => `<option>${esc(m)}</option>`).join('')}</select>
     <textarea id="cSteps" placeholder="Ausführung (ein Schritt pro Zeile, optional)"></textarea></div>${modalBtns('saveCustom', 'Speichern')}`);
 }
+/* ---------- Alternative während des Trainings ---------- */
+let altCtx = null;
+function altListHTML(q) {
+  const day = findDay(altCtx.day), ex = findEx(altCtx.day, altCtx.ex), cur = eName(ex, sess(day));
+  const m = findLib(ex.name) && findLib(ex.name).muscle, n = norm(q || '');
+  const items = allEx().filter((e) => norm(e.name) !== norm(cur) && norm(e.name) !== norm(ex.name) && (!n || norm(e.name).includes(n) || (e.aliases || []).some((a) => norm(a).includes(n))))
+    .sort((a, b) => (b.muscle === m) - (a.muscle === m)).slice(0, 40);
+  const row = (e) => `<button class="altrow" data-a="altUse" data-name="${esc(e.name)}">${thumbHTML(e.name).replace(/<button class="thumb"[^>]*>/, '<span class="thumb">').replace('</button>', '</span>')}<span class="grow"><b>${esc(e.name)}</b><small class="muted">${esc(e.muscle)} · ${esc(e.equipment)}</small></span></button>`;
+  return items.length ? items.map(row).join('') : '<p class="muted small">Keine passende Übung in der Bibliothek. Mit dem Namen oben trotzdem verwenden.</p>';
+}
+function altModal(dayId, exId) {
+  altCtx = { day: dayId, ex: exId };
+  const ex = findEx(dayId, exId), m = findLib(ex.name);
+  openModal(`<div class="row"><h2 class="grow" style="margin:0">Statt ${esc(ex.name)}</h2><button class="ic" data-a="closeModal" aria-label="Schließen">✕</button></div>
+    <p class="muted small" style="margin:4px 0 10px">Gerät belegt? Such eine Übung aus der Bibliothek oder tipp einen eigenen Namen. Heute wird unter diesem Namen trainiert und gespeichert.${m ? ` Passende Übungen für ${esc(m.muscle)} stehen oben.` : ''}</p>
+    <div class="row"><input id="altQ" class="grow" type="search" data-f="altQ" maxlength="60" placeholder="Übung oder Gerät" autocomplete="off"><button class="btn primary" data-a="altUse" data-name="">Verwenden</button></div>
+    <label class="check"><input type="checkbox" id="altSave"> Im Plan als Alternative speichern</label>
+    <div id="altList" class="altlist">${altListHTML('')}</div>`);
+}
 /* ---------- Drucken (DIN A4) ---------- */
 function printModal() {
   openModal(`<div class="row"><h2 class="grow" style="margin:0">Plan drucken</h2><button class="ic" data-a="closeModal" aria-label="Schließen">✕</button></div>
@@ -586,7 +610,7 @@ function viewTrain() {
     const en = eName(ex, ss), sw = swapped(ex, ss), last = lastOf(en);
     const info = findLib(en) ? `<button class="ic info" data-a="exinfo" data-name="${esc(en)}" aria-label="Übungsinfo">ℹ︎</button>` : '';
     const upNow = ex.up && ex.upAt !== today(), upSet = ex.up && !upNow;
-    const flags = `<div class="exflags">${ex.alt ? `<button class="chip ${sw ? 'on' : ''}" data-a="altSwap" data-ex="${ex.id}">⇄ ${sw ? 'Statt ' + esc(ex.name) + ' · zurück' : 'Alternative: ' + esc(ex.alt)}</button>` : ''}<button class="chip up ${ex.up ? 'on' : ''}" data-a="upToggle" data-ex="${ex.id}">${upNow ? '↑ Heute Gewicht steigern · erledigt' : upSet ? '✓ Nächstes Mal steigern' : '↑ Nächstes Mal steigern'}</button></div>`;
+    const flags = `<div class="exflags">${sw ? `<button class="chip on" data-a="altBack" data-ex="${ex.id}">⇄ Statt ${esc(ex.name)} · zurück</button>` : ex.alt ? `<button class="chip" data-a="altSwap" data-ex="${ex.id}">⇄ Alternative: ${esc(ex.alt)}</button>` : ''}<button class="chip" data-a="altPick" data-ex="${ex.id}">⇄ ${sw || ex.alt ? 'Andere wählen…' : 'Alternative wählen…'}</button><button class="chip up ${ex.up ? 'on' : ''}" data-a="upToggle" data-ex="${ex.id}">${upNow ? '↑ Heute Gewicht steigern · erledigt' : upSet ? '✓ Nächstes Mal steigern' : '↑ Nächstes Mal steigern'}</button></div>`;
     const nd = arr.filter(Boolean).length;
     return `<div class="card ex ${nd === arr.length && nd ? 'full' : nd ? 'part' : ''}">
       <div class="nameline">${thumbHTML(en)}<div class="exname">${esc(en)}</div>${info}</div>
@@ -848,9 +872,22 @@ async function act(a, d) {
     }
 
     case 'exinfo': return exModal(d.name);
+    case 'altPick': return altModal(curDay, d.ex);
+    case 'altUse': {
+      const day = findDay(altCtx.day), ex = findEx(altCtx.day, altCtx.ex), ss = sess(day);
+      const name = (d.name || $('#altQ').value).trim().slice(0, 60);
+      if (name.length < 2) return toast('Bitte eine Übung wählen oder einen Namen eingeben');
+      const lib0 = findLib(name), final = lib0 ? lib0.name : name;
+      if (norm(final) === norm(ex.name)) delete ss.alt[ex.id]; else ss.alt[ex.id] = final;
+      delete ss.w[ex.id]; delete ss.r[ex.id];
+      if ($('#altSave').checked) ex.alt = final;
+      closeModal(); toast('Statt ' + ex.name + ': ' + final);
+      break;
+    }
+    case 'altBack': { const ss = sess(findDay(curDay)); delete ss.alt[d.ex]; delete ss.w[d.ex]; delete ss.r[d.ex]; break; }
     case 'altSwap': {
       const day = findDay(curDay), ss = sess(day), ex = findEx(day.id, d.ex);
-      ss.alt[ex.id] = !ss.alt[ex.id]; delete ss.w[ex.id]; delete ss.r[ex.id]; // Werte der anderen Übung neu vorbelegen
+      ss.alt[ex.id] = ex.alt; delete ss.w[ex.id]; delete ss.r[ex.id]; // Werte der anderen Übung neu vorbelegen
       break;
     }
     case 'upToggle': {
@@ -963,6 +1000,7 @@ document.addEventListener('click', (e) => {
 document.addEventListener('input', (e) => {
   const el = e.target, f = el.dataset.f, d = el.dataset, v = el.value;
   if (!f || f === 'userName' || f === 'histEx' || el.type === 'checkbox') return;
+  if (f === 'altQ') { $('#altList').innerHTML = altListHTML(v); return; }
   if (f === 'libQ') { libF.q = v; $('#libList').innerHTML = libListHTML(); return; }
   if (f === 'dayName') findDay(d.day).name = v;
   else if (f.startsWith('ex.')) {
