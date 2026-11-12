@@ -207,6 +207,11 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .altrow .grow{display:grid;gap:1px}.altrow small{font-size:12px}
 .altrow .thumb{width:44px;height:44px;border-radius:10px;display:block;overflow:hidden;flex:none}
 .altrow .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.sugg{margin-top:12px;border:1.5px solid var(--warn);background:rgba(245,196,49,.12);border-radius:16px;padding:12px 14px;display:grid;gap:10px}
+.sugg.down{border-color:var(--danger);background:rgba(255,107,112,.10)}
+.sugg b{display:block;font:800 21px/1.1 var(--display)}
+.sugg span{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+.sugg .row{margin:0}.sugg .btn{padding:9px 14px;font-size:15px;flex:1}
 /* Übungsfotos */
 .thumb{flex:none;width:56px;height:56px;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--field);cursor:pointer}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -418,7 +423,7 @@ const findDay = (id) => S.days.find((d) => d.id === id);
 const findEx = (dayId, exId) => findDay(dayId).exercises.find((e) => e.id === exId);
 const sess = (day) => {
   const s = (S.sessions[day.id] ||= { sets: {} });
-  s.sets ||= {}; s.w ||= {}; s.r ||= {}; s.alt ||= {}; delete s.weight; delete s.reps; // w/r: Gewicht und Wiederholungen pro Satz
+  s.sets ||= {}; s.w ||= {}; s.r ||= {}; s.alt ||= {}; s.sug ||= {}; delete s.weight; delete s.reps; // w/r: Gewicht und Wiederholungen pro Satz
   return s;
 };
 const today = () => new Date().toLocaleDateString('sv-SE'); // lokales Datum als JJJJ-MM-TT
@@ -435,6 +440,43 @@ function lastOf(name) {
 }
 // Wert pro Satz: eingegebener Wert, sonst Einzelplan des Satzes, sonst Satz der letzten Einheit (Gewicht) bzw. Plan-Ziel (Wiederholungen)
 const filled = (ss, k, exId, i) => { const v = (ss[k][exId] || [])[i]; return v === undefined || v === null || v === '' ? undefined : v; };
+/* ---------- Steigerungsvorschläge (doppelte Progression) ----------
+   Steigern: in den letzten ZWEI Einheiten mit gleichem Gewicht in allen Arbeitssätzen die obere Wiederholungsgrenze erreicht.
+   Zurück: nach einer Steigerung die untere Grenze verfehlt oder Sätze nicht geschafft, dann auf das vorherige Gewicht. */
+const fmtKg = (w) => String(Math.round(w * 100) / 100).replace('.', ',');
+function parseReps(s) {
+  const t = String(s == null ? '' : s).trim(), m = t.match(/^(\d+)\s*[-–—]\s*(\d+)$/);
+  if (m) return { lo: Math.min(+m[1], +m[2]), hi: Math.max(+m[1], +m[2]) };
+  if (/^\d+$/.test(t)) return { lo: +t, hi: +t };
+  return null; // z. B. „max“: keine Bewertung möglich
+}
+function histOf(name) {
+  const out = [];
+  S.history.forEach((h) => h.items.forEach((it) => { if (norm(it.name) === norm(name) && it.detail) out.push({ ...it, date: h.date }); }));
+  return out;
+}
+function judge(ex, it) { // 'top' = obere Grenze überall erreicht, 'fail' = Satz verfehlt oder fehlt, 'ok' = dazwischen, null = nicht bewertbar
+  const work = it.detail.filter((s) => !s.warm);
+  const targets = ex.plan ? ex.plan.filter((s) => !s.warm).map((s) => s.r) : Array(ex.sets).fill(ex.reps);
+  if (!targets.length) return null;
+  let state = 'top';
+  for (let i = 0; i < targets.length; i++) {
+    const p = parseReps(targets[i]); if (!p) return null;
+    if (!work[i] || num(work[i].r) < p.lo) return 'fail';
+    if (num(work[i].r) < p.hi) state = 'ok';
+  }
+  return state;
+}
+function suggestion(ex) {
+  const step = ex.step > 0 ? ex.step : 2.5, h = histOf(ex.name);
+  if (h.length < 1) return null;
+  const a = h[h.length - 1], b = h[h.length - 2];
+  if (!(a.weight > 0)) return null;
+  const ja = judge(ex, a);
+  if (b && ja === 'top' && judge(ex, b) === 'top' && Math.abs(b.weight - a.weight) < 0.01) return { type: 'up', from: a.weight, to: a.weight + step, delta: step };
+  if (b && ja === 'fail' && b.weight > 0 && b.weight < a.weight - 0.01) return { type: 'down', from: a.weight, to: b.weight, delta: b.weight - a.weight };
+  return null;
+}
 function resW(ex, ss, i) {
   const v = filled(ss, 'w', ex.id, i); if (v !== undefined) return v;
   if (ex.plan && ex.plan[i]) return ex.plan[i].w;
@@ -651,7 +693,9 @@ function viewTrain() {
     const en = eName(ex, ss), sw = swapped(ex, ss), last = lastOf(en);
     const info = findLib(en) ? `<button class="ic info" data-a="exinfo" data-name="${esc(en)}" aria-label="Übungsinfo">ℹ︎</button>` : '';
     const upNow = ex.up && ex.upAt !== today(), upSet = ex.up && !upNow;
-    const flags = `<div class="exflags">${sw ? `<button class="chip on" data-a="altBack" data-ex="${ex.id}">⇄ Statt ${esc(ex.name)} · zurück</button>` : ex.alt ? `<button class="chip" data-a="altSwap" data-ex="${ex.id}">⇄ Alternative: ${esc(ex.alt)}</button>` : ''}<button class="chip" data-a="altPick" data-ex="${ex.id}">⇄ ${sw || ex.alt ? 'Andere wählen…' : 'Alternative wählen…'}</button><button class="chip up ${ex.up ? 'on' : ''}" data-a="upToggle" data-ex="${ex.id}">${upNow ? '↑ Heute Gewicht steigern · erledigt' : upSet ? '✓ Nächstes Mal steigern' : '↑ Nächstes Mal steigern'}</button></div>`;
+    const sg = !sw && !ss.sug[ex.id] && !(ss.sets[ex.id] || []).some(Boolean) ? suggestion(ex) : null;
+    const sugHTML = sg ? `<div class="sugg ${sg.type}"><div><b>${sg.type === 'up' ? '↑ Heute steigern: ' + fmtKg(sg.to) + ' kg' : '↓ Zurück auf ' + fmtKg(sg.to) + ' kg'}</b><span>${sg.type === 'up' ? 'Zweimal in Folge alle Wiederholungen mit ' + fmtKg(sg.from) + ' kg geschafft.' : 'Mit ' + fmtKg(sg.from) + ' kg zuletzt die Wiederholungen nicht geschafft.'}</span></div><div class="row"><button class="btn primary" data-a="sugApply" data-ex="${ex.id}">Übernehmen</button><button class="btn" data-a="sugLater" data-ex="${ex.id}">Später</button></div></div>` : '';
+    const flags = `${sugHTML}<div class="exflags">${sw ? `<button class="chip on" data-a="altBack" data-ex="${ex.id}">⇄ Statt ${esc(ex.name)} · zurück</button>` : ex.alt ? `<button class="chip" data-a="altSwap" data-ex="${ex.id}">⇄ Alternative: ${esc(ex.alt)}</button>` : ''}<button class="chip" data-a="altPick" data-ex="${ex.id}">⇄ ${sw || ex.alt ? 'Andere wählen…' : 'Alternative wählen…'}</button><button class="chip up ${ex.up ? 'on' : ''}" data-a="upToggle" data-ex="${ex.id}">${upNow ? '↑ Heute Gewicht steigern · erledigt' : upSet ? '✓ Nächstes Mal steigern' : '↑ Nächstes Mal steigern'}</button></div>`;
     const nd = arr.filter(Boolean).length;
     return `<div class="card ex ${nd === arr.length && nd ? 'full' : nd ? 'part' : ''}">
       <div class="nameline">${thumbHTML(en)}<div class="exname">${esc(en)}</div>${info}</div>
@@ -683,16 +727,17 @@ function thumbHTML(name) {
 function exPlanHTML(d, x) {
   const at = `data-day="${d.id}" data-ex="${x.id}"`;
   const btns = `<button class="ic" data-a="moveEx" ${at} data-dir="-1">↑</button><button class="ic" data-a="moveEx" ${at} data-dir="1">↓</button><button class="ic danger" data-a="delEx" ${at}>✕</button>`;
+  const stepL = `<label>Schritt (kg)<input type="number" inputmode="decimal" step="0.5" min="0.5" max="20" placeholder="2,5" data-f="ex.step" ${at} value="${x.step || ''}"></label>`;
   const rest = `<label>Pause (s)<input type="number" inputmode="numeric" min="0" max="900" placeholder="${S.settings.rest}" data-f="ex.rest" ${at} value="${x.rest || ''}"></label>`;
   if (!x.plan) {
     return `<div class="nums">
         <label>Sätze<input type="number" inputmode="numeric" min="1" max="10" data-f="ex.sets" ${at} value="${x.sets}"></label>
         <label>Wdh.<input type="text" data-f="ex.reps" ${at} value="${esc(x.reps)}"></label>
         <label>kg<input type="number" inputmode="decimal" step="0.5" data-f="ex.weight" ${at} value="${x.weight}"></label>
-        ${rest}${btns}</div>
+        ${rest}${stepL}${btns}</div>
       <button class="btn block" style="margin-top:8px" data-a="perSet" ${at}>Sätze einzeln planen (Pyramide, Aufwärmen)</button>`;
   }
-  return `<div class="nums">${rest}${btns}</div>
+  return `<div class="nums">${rest}${stepL}${btns}</div>
     <div style="margin-top:8px">${x.plan.map((s, i) => `<div class="setrow psrow">
       <span class="badge" style="min-width:34px;text-align:center;margin:0">${s.warm ? 'W' : i + 1}</span>
       <label class="sf"><input type="number" inputmode="decimal" step="0.5" data-f="ps.w" ${at} data-i="${i}" value="${esc(s.w)}" aria-label="Gewicht Satz ${i + 1}"><span>kg</span></label>
@@ -913,6 +958,16 @@ async function act(a, d) {
     }
 
     case 'exinfo': return exModal(d.name);
+    case 'sugLater': { sess(findDay(curDay)).sug[d.ex] = true; break; }
+    case 'sugApply': {
+      const day = findDay(curDay), ss = sess(day), ex = findEx(day.id, d.ex), sg = suggestion(ex);
+      if (!sg) break;
+      if (ex.plan) ex.plan.forEach((s) => { if (!s.warm && num(s.w) > 0) s.w = Math.max(0, Math.round((num(s.w) + sg.delta) * 100) / 100); });
+      else { ex.weight = sg.to; ss.w[ex.id] = Array(ex.sets).fill(String(sg.to)); }
+      if (sg.type === 'up') { ex.up = false; }
+      ss.sug[ex.id] = true; toast(sg.type === 'up' ? 'Neues Gewicht: ' + fmtKg(sg.to) + ' kg' : 'Zurück auf ' + fmtKg(sg.to) + ' kg');
+      break;
+    }
     case 'altPick': return altModal(curDay, d.ex);
     case 'altUse': {
       const day = findDay(altCtx.day), ex = findEx(altCtx.day, altCtx.ex), ss = sess(day);
@@ -1047,7 +1102,7 @@ document.addEventListener('input', (e) => {
   else if (f.startsWith('ex.')) {
     const k = f.slice(3), ex = findEx(d.day, d.ex);
     ex[k] = k === 'sets' ? Math.max(1, Math.min(10, parseInt(v) || 1))
-      : k === 'weight' ? num(v)
+      : k === 'weight' || k === 'step' ? num(v)
       : k === 'rest' ? Math.max(0, Math.min(900, parseInt(v) || 0))
       : v;
   }
