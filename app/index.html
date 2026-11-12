@@ -212,6 +212,10 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0
 .sugg b{display:block;font:800 21px/1.1 var(--display)}
 .sugg span{display:block;font-size:13px;color:var(--muted);margin-top:3px}
 .sugg .row{margin:0}.sugg .btn{padding:9px 14px;font-size:15px;flex:1}
+.sugg.hold{border-color:var(--line-strong);background:var(--field)}
+.rirrow{display:flex;align-items:center;gap:6px;margin:-4px 0 10px 60px;font-size:13px;color:var(--muted)}
+.rirc{width:34px;height:30px;border-radius:999px;border:1.5px solid var(--line-strong);background:transparent;color:var(--text);font:700 15px var(--body);cursor:pointer}
+.rirc.on{background:var(--accent);border-color:var(--accent);color:#06121a}
 /* Übungsfotos */
 .thumb{flex:none;width:56px;height:56px;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--field);cursor:pointer}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -376,7 +380,7 @@ async function flush() { if (pending) { clearTimeout(saveTimer); await doSave();
 
 function ensure() {
   S.days = S.days || []; S.history = S.history || []; S.sessions = S.sessions || {}; S.custom = S.custom || []; S.photos = S.photos || {}; S.credits = S.credits || {};
-  S.settings = Object.assign({ rest: 90, auto: true, sound: true, vibrate: true }, S.settings || {});
+  S.settings = Object.assign({ rest: 90, auto: true, sound: true, vibrate: true, rir: false }, S.settings || {});
 }
 function authFail(id) {
   pending = false; clearTimeout(saveTimer);
@@ -423,7 +427,7 @@ const findDay = (id) => S.days.find((d) => d.id === id);
 const findEx = (dayId, exId) => findDay(dayId).exercises.find((e) => e.id === exId);
 const sess = (day) => {
   const s = (S.sessions[day.id] ||= { sets: {} });
-  s.sets ||= {}; s.w ||= {}; s.r ||= {}; s.alt ||= {}; s.sug ||= {}; delete s.weight; delete s.reps; // w/r: Gewicht und Wiederholungen pro Satz
+  s.sets ||= {}; s.w ||= {}; s.r ||= {}; s.alt ||= {}; s.sug ||= {}; s.rir ||= {}; delete s.weight; delete s.reps; // w/r: Gewicht und Wiederholungen pro Satz
   return s;
 };
 const today = () => new Date().toLocaleDateString('sv-SE'); // lokales Datum als JJJJ-MM-TT
@@ -473,6 +477,8 @@ function suggestion(ex) {
   const a = h[h.length - 1], b = h[h.length - 2];
   if (!(a.weight > 0)) return null;
   const ja = judge(ex, a);
+  const rirLow = (it) => it.detail.some((s) => !s.warm && typeof s.rir === 'number' && s.rir < 2);
+  if (b && ja === 'top' && judge(ex, b) === 'top' && Math.abs(b.weight - a.weight) < 0.01 && S.settings.rir && (rirLow(a) || rirLow(b))) return { type: 'hold', from: a.weight };
   if (b && ja === 'top' && judge(ex, b) === 'top' && Math.abs(b.weight - a.weight) < 0.01) return { type: 'up', from: a.weight, to: a.weight + step, delta: step };
   if (b && ja === 'fail' && b.weight > 0 && b.weight < a.weight - 0.01) return { type: 'down', from: a.weight, to: b.weight, delta: b.weight - a.weight };
   return null;
@@ -682,6 +688,10 @@ function viewLogin() {
     <div class="row" style="margin:12px 0 0"><button class="btn grow" data-a="newUser">Neue Person</button><button class="btn grow" data-a="trainerLogin">Trainer-Zugang</button></div></div>`;
 }
 
+function rirHTML(ex, ss, i) {
+  const cur = (ss.rir[ex.id] || [])[i];
+  return `<div class="rirrow" role="group" aria-label="Wiederholungen in Reserve, Satz ${i + 1}"><span>Reserve</span>${[0, 1, 2, 3].map((v) => `<button class="rirc ${cur === v ? 'on' : ''}" data-a="rir" data-ex="${ex.id}" data-i="${i}" data-v="${v}" aria-pressed="${cur === v}">${v === 3 ? '3+' : v}</button>`).join('')}<small class="muted" style="white-space:nowrap">übrig</small></div>`;
+}
 function viewTrain() {
   if (!S.days.length) return '<div class="card muted">Noch keine Trainingstage. Lege im Tab „Plan“ einen an.</div>';
   if (!findDay(curDay)) curDay = S.days[0].id;
@@ -694,7 +704,7 @@ function viewTrain() {
     const info = findLib(en) ? `<button class="ic info" data-a="exinfo" data-name="${esc(en)}" aria-label="Übungsinfo">ℹ︎</button>` : '';
     const upNow = ex.up && ex.upAt !== today(), upSet = ex.up && !upNow;
     const sg = !sw && !ss.sug[ex.id] && !(ss.sets[ex.id] || []).some(Boolean) ? suggestion(ex) : null;
-    const sugHTML = sg ? `<div class="sugg ${sg.type}"><div><b>${sg.type === 'up' ? '↑ Heute steigern: ' + fmtKg(sg.to) + ' kg' : '↓ Zurück auf ' + fmtKg(sg.to) + ' kg'}</b><span>${sg.type === 'up' ? 'Zweimal in Folge alle Wiederholungen mit ' + fmtKg(sg.from) + ' kg geschafft.' : 'Mit ' + fmtKg(sg.from) + ' kg zuletzt die Wiederholungen nicht geschafft.'}</span></div><div class="row"><button class="btn primary" data-a="sugApply" data-ex="${ex.id}">Übernehmen</button><button class="btn" data-a="sugLater" data-ex="${ex.id}">Später</button></div></div>` : '';
+    const sugHTML = sg && sg.type === 'hold' ? `<div class="sugg hold"><div><b>Noch einmal mit ${fmtKg(sg.from)} kg</b><span>Alle Wiederholungen geschafft, aber zuletzt weniger als 2 in Reserve. Erst steigern, wenn es leichter wird.</span></div></div>` : sg ? `<div class="sugg ${sg.type}"><div><b>${sg.type === 'up' ? '↑ Heute steigern: ' + fmtKg(sg.to) + ' kg' : '↓ Zurück auf ' + fmtKg(sg.to) + ' kg'}</b><span>${sg.type === 'up' ? 'Zweimal in Folge alle Wiederholungen mit ' + fmtKg(sg.from) + ' kg geschafft' + (S.settings.rir ? ', mit mindestens 2 in Reserve.' : '.') : 'Mit ' + fmtKg(sg.from) + ' kg zuletzt die Wiederholungen nicht geschafft.'}</span></div><div class="row"><button class="btn primary" data-a="sugApply" data-ex="${ex.id}">Übernehmen</button><button class="btn" data-a="sugLater" data-ex="${ex.id}">Später</button></div></div>` : '';
     const flags = `${sugHTML}<div class="exflags">${sw ? `<button class="chip on" data-a="altBack" data-ex="${ex.id}">⇄ Statt ${esc(ex.name)} · zurück</button>` : ex.alt ? `<button class="chip" data-a="altSwap" data-ex="${ex.id}">⇄ Alternative: ${esc(ex.alt)}</button>` : ''}<button class="chip" data-a="altPick" data-ex="${ex.id}">⇄ ${sw || ex.alt ? 'Andere wählen…' : 'Alternative wählen…'}</button><button class="chip up ${ex.up ? 'on' : ''}" data-a="upToggle" data-ex="${ex.id}">${upNow ? '↑ Heute Gewicht steigern · erledigt' : upSet ? '✓ Nächstes Mal steigern' : '↑ Nächstes Mal steigern'}</button></div>`;
     const nd = arr.filter(Boolean).length;
     return `<div class="card ex ${nd === arr.length && nd ? 'full' : nd ? 'part' : ''}">
@@ -706,7 +716,7 @@ function viewTrain() {
         <label class="sf"><input type="number" inputmode="decimal" step="0.5" data-f="sw" data-ex="${ex.id}" data-i="${i}" value="${esc(resW(ex, ss, i))}" aria-label="Gewicht Satz ${i + 1}"><span>kg</span></label>
         <span class="x">×</span>
         <label class="sf"><input type="text" inputmode="numeric" data-f="sr" data-ex="${ex.id}" data-i="${i}" value="${esc(resR(ex, ss, i))}" aria-label="Wiederholungen Satz ${i + 1}"><span>Wdh.</span></label>
-      </div>`).join('')}</div>
+      </div>${S.settings.rir && on && !isWarm(ex, i) ? rirHTML(ex, ss, i) : ''}`).join('')}</div>
       ${ex.note ? `<div class="muted small" style="margin-top:8px">📝 ${esc(ex.note)}</div>` : ''}
       ${flags}
     </div>`;
@@ -774,6 +784,7 @@ function viewPlan() {
       <label class="check"><input type="checkbox" data-f="set.auto" ${S.settings.auto ? 'checked' : ''}> Timer nach jedem abgehakten Satz automatisch starten</label>
       <label class="check"><input type="checkbox" data-f="set.sound" ${S.settings.sound ? 'checked' : ''}> Signalton am Ende</label>
       <label class="check"><input type="checkbox" data-f="set.vibrate" ${S.settings.vibrate ? 'checked' : ''}> Vibration am Ende</label>
+      <label class="check"><input type="checkbox" data-f="set.rir" ${S.settings.rir ? 'checked' : ''}> Reserve (RIR) nach jedem Satz abfragen; Steigerungen nur, wenn noch mindestens 2 Wiederholungen übrig waren</label>
     </div>
     <div class="card"><h2>Profil</h2>
       <div class="row"><input class="grow" data-f="userName" value="${esc(S.name)}" aria-label="Name"></div>
@@ -873,6 +884,7 @@ function finish() {
       if (!on) return;
       const s = { w: num(resW(ex, ss, i)), r: String(resR(ex, ss, i)) };
       if (isWarm(ex, i)) s.warm = true;
+      else { const rv = (ss.rir[ex.id] || [])[i]; if (S.settings.rir && typeof rv === 'number') s.rir = rv; }
       detail.push(s);
     });
     if (!detail.length) return;
@@ -958,10 +970,15 @@ async function act(a, d) {
     }
 
     case 'exinfo': return exModal(d.name);
+    case 'rir': {
+      const ss = sess(findDay(curDay)), arr = (ss.rir[d.ex] ||= []), v = +d.v;
+      arr[+d.i] = arr[+d.i] === v ? null : v;
+      break;
+    }
     case 'sugLater': { sess(findDay(curDay)).sug[d.ex] = true; break; }
     case 'sugApply': {
       const day = findDay(curDay), ss = sess(day), ex = findEx(day.id, d.ex), sg = suggestion(ex);
-      if (!sg) break;
+      if (!sg || sg.type === 'hold') break;
       if (ex.plan) ex.plan.forEach((s) => { if (!s.warm && num(s.w) > 0) s.w = Math.max(0, Math.round((num(s.w) + sg.delta) * 100) / 100); });
       else { ex.weight = sg.to; ss.w[ex.id] = Array(ex.sets).fill(String(sg.to)); }
       if (sg.type === 'up') { ex.up = false; }
@@ -1138,7 +1155,7 @@ document.addEventListener('change', async (e) => {
   if (f === 'histEx') { histEx = el.value; render(); return; }
   if (f === 'ex.up') { const ex = findEx(el.dataset.day, el.dataset.ex); ex.up = el.checked; ex.upAt = today(); save(); return; }
   if (f === 'ps.warm') { findEx(el.dataset.day, el.dataset.ex).plan[+el.dataset.i].warm = el.checked; save(); render(); return; }
-  if (f && f.startsWith('set.') && el.type === 'checkbox') { S.settings[f.slice(4)] = el.checked; save(); return; }
+  if (f && f.startsWith('set.') && el.type === 'checkbox') { S.settings[f.slice(4)] = el.checked; save(); if (f === 'set.rir') render(); return; }
   if (f === 'userName') {
     const name = el.value.trim(); if (!name) { el.value = S.name; return; }
     S.name = name; const u = users.find((x) => x.id === uid); if (u) u.name = name;
