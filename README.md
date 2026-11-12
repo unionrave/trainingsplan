@@ -11,6 +11,7 @@ Mehrere Personen mit eigenem Plan und Verlauf, keine externen Abhängigkeiten (N
 - **Gewicht steigern:** Pro Übung „Nächstes Mal steigern“ markieren (im Training oder im Plan). Beim nächsten Training erscheint „Heute Gewicht steigern“; die Markierung verschwindet automatisch, sobald das Gewicht höher als zuletzt war, oder per Tipp
 - **Übungsbibliothek:** 40 Übungen mit Ausführung und Tipps, durchsuchbar und filterbar nach Muskelgruppe und Gerät. Übungen lassen sich direkt in einen Trainingstag übernehmen, eigene Übungen sind möglich
 - **Übungsfotos:** Alle 40 Bibliotheksübungen haben zwei Bilder (Start- und Endposition). Zusätzlich lässt sich pro Person ein eigenes Foto der Maschine oder Übung hinzufügen (Handykamera oder Galerie), das dann zuerst angezeigt wird. Beim Anlegen einer eigenen Übung öffnet sich eine Bildersuche (Wikimedia Commons, freie Lizenzen), auch später über „Im Internet suchen“ erreichbar; Urheber und Lizenz werden am Bild angezeigt. Die Vorschau erscheint im Training und in der Bibliothek
+- **Offline und installierbar (PWA):** Die App lässt sich auf dem Handy zum Home-Bildschirm hinzufügen (iPhone: Safari → Teilen → „Zum Home-Bildschirm“, Android: Chrome → „App installieren“) und läuft dann im Vollbild. Ohne Netz im Studio funktionieren Training, Plan, Bibliothek und Verlauf weiter; Änderungen werden auf dem Gerät gesichert und automatisch hochgeladen, sobald wieder Verbindung besteht (Anzeige oben rechts). Voraussetzung ist HTTPS, zum Beispiel über einen Reverse Proxy. Die erste Anmeldung und die Bildersuche brauchen Netz
 - **Drucken (DIN A4):** Plan als Ausdruck für das Training ohne Handy. Pro Trainingstag eine Seite mit Zielwerten, Pause, Notiz, Übungsbild und Schreibfeldern für Gewicht und Wiederholungen je Satz. Auswahl der Tage, Bilder und letzten Werte vor dem Drucken. Über „Plan drucken“ im Tab Plan oder das Druckersymbol im Tab Training; im Druckdialog „Als PDF speichern“ wählen, wenn nur eine Datei gewünscht ist
 - **Verlauf:** Gewichtsdiagramm pro Übung und Liste aller Einheiten
 - **PIN pro Person:** 4–8 Ziffern, ändern jederzeit möglich
@@ -24,6 +25,7 @@ trainingsplan/
 ├── app/                 Anwendung (wird schreibgeschützt in den Container gemountet)
 │   ├── server.js
 │   ├── index.html
+│   ├── sw.js, manifest.webmanifest, icons/   Offline-Betrieb und App-Symbol
 │   ├── library.json     Übungsbibliothek, frei editierbar
 │   ├── img/lib/         Übungsbilder der Bibliothek
 │   └── fonts/           Schriften (Big Shoulders Display, Barlow, SIL OFL), lokal gebündelt

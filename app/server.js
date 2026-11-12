@@ -205,6 +205,22 @@ const server = http.createServer(async (req, res) => {
       const [f, type] = STATIC[p];
       return send(res, 200, fs.readFileSync(path.join(__dirname, f)), type);
     }
+    if (method === 'GET' && p === '/sw.js') { // Service Worker: nie zwischenspeichern, damit Updates ankommen
+      res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' });
+      return res.end(fs.readFileSync(path.join(__dirname, 'sw.js')));
+    }
+    if (method === 'GET' && p === '/manifest.webmanifest') {
+      res.writeHead(200, { 'Content-Type': 'application/manifest+json; charset=utf-8', 'Cache-Control': 'no-cache' });
+      return res.end(fs.readFileSync(path.join(__dirname, 'manifest.webmanifest')));
+    }
+    const icon = method === 'GET' && p.match(/^\/icons\/([a-z0-9-]+\.png)$/);
+    if (icon) {
+      try {
+        const buf = fs.readFileSync(path.join(__dirname, 'icons', icon[1]));
+        res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' });
+        return res.end(buf);
+      } catch { return send(res, 404, { error: 'Nicht gefunden' }); }
+    }
     const font = method === 'GET' && p.match(/^\/fonts\/([a-z0-9-]+\.woff2)$/);
     if (font) { // gebündelte Schriften (offline nutzbar), lange zwischenspeichern
       try {

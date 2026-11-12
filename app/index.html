@@ -5,6 +5,12 @@
 <meta name="author" content="Marco Weber">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Training">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="theme-color" content="#0d2229" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#dce7eb" media="(prefers-color-scheme: light)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%232a6df0'/%3E%3Ccircle cx='16' cy='16' r='10.5' fill='none' stroke='%23fff' stroke-opacity='.65' stroke-width='1.6'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%230d2229'/%3E%3C/svg%3E">
@@ -293,7 +299,9 @@ const saveAuth = () => { try { localStorage.setItem('tp-auth', JSON.stringify(au
 async function api(path, opts = {}) {
   const m = path.match(/^\/users\/([a-z0-9-]+)/);
   const t = auth.trainer || (m && auth.tokens[m[1]]) || (!m && uid && auth.tokens[uid]) || '';
-  const r = await fetch('/api' + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: 'Bearer ' + t } : {}) } });
+  let r;
+  try { r = await fetch('/api' + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: 'Bearer ' + t } : {}) } }); }
+  catch { const e = new Error('Keine Verbindung zum Server'); e.network = true; throw e; }
   const data = await r.json().catch(() => null);
   if (!r.ok) { const e = new Error((data && data.error) || ('Fehler ' + r.status)); e.status = r.status; throw e; }
   return data;
@@ -326,17 +334,39 @@ function status(t) { $('#status').textContent = t; }
 let toastTimer;
 function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), 2200); }
 
+/* ---------- Lokaler Speicher (Offline-Betrieb) ----------
+   Jede Änderung wird sofort im Gerät gesichert und als „ungesendet“ markiert. Sobald der Server erreichbar ist, wird sie hochgeladen. */
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch { return false; } };
+const lsDel = (k) => { try { localStorage.removeItem(k); } catch {} };
+const cacheKey = (id) => 'tp-data-' + id, dirtyKey = (id) => 'tp-dirty-' + id;
+const isDirty = (id) => lsGet(dirtyKey(id)) === '1';
+const readCache = (id) => { try { return JSON.parse(lsGet(cacheKey(id))); } catch { return null; } };
+const writeCache = (id, data) => lsSet(cacheKey(id), JSON.stringify(data));
+const offlineText = () => (navigator.onLine === false ? 'Offline · lokal gesichert' : 'Keine Verbindung · lokal gesichert');
+let syncTimer = null;
+function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(() => { if (uid && S && pending) doSave(); }, 20000); }
+
 /* ---------- Speichern ---------- */
 async function doSave() {
   if (!S || !uid) return;
-  const id = uid;
-  try { await api('/users/' + id, { method: 'PUT', body: JSON.stringify(S) }); pending = false; status('Gespeichert ✓'); }
-  catch (e) {
-    if (e.status === 401) { authFail(id); toast('Bitte neu anmelden – die letzte Änderung wurde nicht gespeichert'); }
+  const id = uid, snap = JSON.stringify(S);
+  try {
+    await api('/users/' + id, { method: 'PUT', body: snap });
+    if (snap === JSON.stringify(S) || !pending) { pending = false; lsDel(dirtyKey(id)); }
+    else { clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 300); } // währenddessen geändert: nochmal senden
+    if (!pending) status('Gespeichert ✓');
+  } catch (e) {
+    if (e.status === 401) { authFail(id); toast('Bitte neu anmelden – die letzten Änderungen sind auf diesem Gerät gesichert und werden danach gesendet'); }
+    else if (e.network) { status(offlineText()); scheduleSync(); }
     else status('Fehler beim Speichern ⚠');
   }
 }
-function save() { pending = true; status('Speichert…'); clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 500); }
+function save() {
+  pending = true; status('Speichert…');
+  if (uid && S) { writeCache(uid, S); lsSet(dirtyKey(uid), '1'); }
+  clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 500);
+}
 async function flush() { if (pending) { clearTimeout(saveTimer); await doSave(); } }
 
 function ensure() {
@@ -351,19 +381,30 @@ function authFail(id) {
 }
 
 /* ---------- Personen / Anmeldung ---------- */
-async function refreshUsers() { users = await api('/users'); }
+async function refreshUsers() {
+  try { users = await api('/users'); lsSet('tp-users', JSON.stringify(users)); }
+  catch (e) { if (!e.network) throw e; try { users = JSON.parse(lsGet('tp-users')) || []; } catch { users = []; } }
+}
 async function loadUser(id) {
   await flush();
   uid = id; try { localStorage.setItem('uid', id); } catch {}
   S = null; loginFor = null; stopRest();
   if (!auth.trainer && !auth.tokens[id]) { loginFor = id; render(); return; }
   render();
-  try { S = await api('/users/' + id); ensure(); curDay = null; histEx = null; render(); }
-  catch (e) { if (e.status === 401) authFail(id); else { toast(e.message); render(); } }
+  const cached = readCache(id), dirty = isDirty(id) && cached;
+  try {
+    if (dirty) { S = cached; ensure(); pending = true; curDay = null; histEx = null; render(); await doSave(); return; } // ungesendete Änderungen gehen vor
+    S = await api('/users/' + id); ensure(); writeCache(id, S); curDay = null; histEx = null; render();
+  }
+  catch (e) {
+    if (e.status === 401) authFail(id);
+    else if (e.network && cached) { S = cached; ensure(); pending = isDirty(id); curDay = null; histEx = null; render(); status(offlineText()); }
+    else { toast(e.message); render(); }
+  }
 }
 async function init() {
   try { lib = await (await fetch('/library.json')).json(); } catch {}
-  if (auth.trainer) { try { await api('/session'); tab = 'over'; } catch { auth.trainer = null; saveAuth(); } }
+  if (auth.trainer) { try { await api('/session'); tab = 'over'; } catch (e) { if (e.network) { auth.trainer = null; } else { auth.trainer = null; saveAuth(); } } }
   await refreshUsers();
   let saved = null; try { saved = localStorage.getItem('uid'); } catch {}
   if (!users.length) { render(); return; }
@@ -806,7 +847,7 @@ function finish() {
 async function deleteUser(id) {
   pending = false; clearTimeout(saveTimer);
   await api('/users/' + id, { method: 'DELETE' });
-  delete auth.tokens[id]; saveAuth();
+  delete auth.tokens[id]; saveAuth(); lsDel(cacheKey(id)); lsDel(dirtyKey(id));
   await refreshUsers();
   if (uid === id) { S = null; uid = null; if (users.length) await loadUser(users[0].id); else render(); } else render();
 }
@@ -850,7 +891,7 @@ async function act(a, d) {
         auth.trainer = null; saveAuth(); if (tab === 'over') tab = 'train';
         if (!(uid && auth.tokens[uid])) { S = null; loginFor = uid || (users[0] && users[0].id) || null; }
         await refreshUsers();
-      } else { delete auth.tokens[uid]; saveAuth(); S = null; loginFor = uid || (users[0] && users[0].id) || null; }
+      } else { delete auth.tokens[uid]; saveAuth(); if (!isDirty(uid)) { lsDel(cacheKey(uid)); } S = null; loginFor = uid || (users[0] && users[0].id) || null; }
       stopRest(); render(); return;
     }
     case 'openUser': tab = 'train'; await loadUser(d.id); return;
@@ -1058,9 +1099,25 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && uid && S && pending) doSave();
   if (document.visibilityState !== 'visible' || !uid || !S || pending || document.activeElement?.dataset?.f || !$('#modal').hidden) return;
   try { S = await api('/users/' + uid); ensure(); render(); } catch {}
 });
+
+window.addEventListener('online', () => { if (uid && S && pending) { status('Verbunden, sende…'); doSave(); } else if (S) status(''); });
+window.addEventListener('offline', () => { if (S) status(offlineText()); });
+
+/* App installierbar und offline nutzbar machen */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(() => {
+    // Übungsbilder der Bibliothek einmal vorladen, damit sie auch im Studio ohne Netz da sind
+    const warm = () => {
+      if (navigator.connection && navigator.connection.saveData) return;
+      (lib.exercises || []).forEach((e) => (e.images || []).forEach((u) => fetch(u).catch(() => {})));
+    };
+    setTimeout(() => { if (lsGet('tp-warm') !== String((lib.exercises || []).length)) { warm(); lsSet('tp-warm', String((lib.exercises || []).length)); } }, 4000);
+  }).catch(() => {});
+}
 
 init().catch(() => { $('#app').innerHTML = '<div class="card">Server nicht erreichbar.</div>'; });
 </script>
