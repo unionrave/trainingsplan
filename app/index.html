@@ -354,28 +354,30 @@ const readCache = (id) => { try { return JSON.parse(lsGet(cacheKey(id))); } catc
 const writeCache = (id, data) => lsSet(cacheKey(id), JSON.stringify(data));
 const offlineText = () => (navigator.onLine === false ? 'Offline · lokal gesichert' : 'Keine Verbindung · lokal gesichert');
 let syncTimer = null;
-function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(() => { if (uid && S && pending) doSave(); }, 20000); }
+function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(() => { if (uid && S && pending && retry) doSave(); }, 20000); }
 
 /* ---------- Speichern ---------- */
 async function doSave() {
   if (!S || !uid) return;
-  const id = uid, snap = JSON.stringify(S);
+  const id = uid, snap = JSON.stringify(S), v = saveVer;
   try {
     await api('/users/' + id, { method: 'PUT', body: snap });
-    if (snap === JSON.stringify(S) || !pending) { pending = false; lsDel(dirtyKey(id)); }
-    else { clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 300); } // währenddessen geändert: nochmal senden
-    if (!pending) status('Gespeichert ✓');
+    if (v === saveVer) { pending = false; lsDel(dirtyKey(id)); } // sonst wurde währenddessen erneut gespeichert: bleibt ungesendet bis zum nächsten Sendeanlass
+    if (!pending) { retry = false; status('Gespeichert ✓'); }
   } catch (e) {
     if (e.status === 401) { authFail(id); toast('Bitte neu anmelden – die letzten Änderungen sind auf diesem Gerät gesichert und werden danach gesendet'); }
-    else if (e.network) { status(offlineText()); scheduleSync(); }
+    else if (e.network) { retry = true; status(offlineText()); scheduleSync(); }
     else status('Fehler beim Speichern ⚠');
   }
 }
+/* Eingaben (Gewicht, Wiederholungen, Haken …) werden nur auf dem Gerät gesichert. Zum Server geht es erst bei saveNow():
+   Training abschließen, neue Übung/Tag, Alternative wählen, Plan-Struktur ändern, Foto – und beim Verlassen des Plan-Tabs. */
+let saveVer = 0, retry = false; // saveVer zählt Änderungen; retry: true, wenn ein Sendeversuch am Netz gescheitert ist
 function save() {
-  pending = true; status('Speichert…');
+  saveVer++; pending = true; status('Lokal gesichert');
   if (uid && S) { writeCache(uid, S); lsSet(dirtyKey(uid), '1'); }
-  clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 500);
 }
+function saveNow() { save(); clearTimeout(saveTimer); return doSave(); }
 async function flush() { if (pending) { clearTimeout(saveTimer); await doSave(); } }
 
 function ensure() {
@@ -898,7 +900,7 @@ function finish() {
   if (!items.length) { toast('Noch keine Sätze abgehakt'); return; }
   S.history.push({ id: rid(), date: new Date().toISOString(), day: day.name, items });
   delete S.sessions[day.id];
-  stopRest(); save(); render(); toast('Training gespeichert 💪');
+  stopRest(); saveNow(); render(); toast('Training gespeichert 💪');
 }
 
 async function deleteUser(id) {
@@ -911,7 +913,7 @@ async function deleteUser(id) {
 
 async function act(a, d) {
   switch (a) {
-    case 'tab': tab = d.tab; if (tab === 'over') await refreshUsers(); render(); return;
+    case 'tab': if (tab === 'plan' && d.tab !== 'plan') flush(); tab = d.tab; if (tab === 'over') await refreshUsers(); render(); return;
     case 'day': curDay = d.day; render(); return;
     case 'rest': unlockAudio(); startRest(+d.s); return;
     case 'tstep': adjustRest(+d.s); return;
@@ -1030,11 +1032,11 @@ async function act(a, d) {
       try {
         const out = await api('/imgfetch', { method: 'POST', body: JSON.stringify({ url: r.thumb }) });
         S.photos[norm(d.name)] = out.url; S.credits[norm(d.name)] = (r.credit + ' · Wikimedia Commons').slice(0, 160);
-        save(); exModal(d.name); render(); toast('Bild gespeichert');
+        saveNow(); exModal(d.name); render(); toast('Bild gespeichert');
       } catch (e) { toast(e.message); }
       return;
     }
-    case 'rmPhoto': delete S.photos[norm(d.name)]; delete S.credits[norm(d.name)]; save(); exModal(d.name); render(); return;
+    case 'rmPhoto': delete S.photos[norm(d.name)]; delete S.credits[norm(d.name)]; saveNow(); exModal(d.name); render(); return;
     case 'lf': libF[d.k] = libF[d.k] === d.v ? '' : d.v; render(); return;
     case 'customEx': return customModal();
     case 'saveCustom': {
@@ -1043,7 +1045,7 @@ async function act(a, d) {
       if (findLib(name)) return toast('Diese Übung gibt es schon');
       const steps = $('#cSteps').value.split('\n').map((s) => s.trim()).filter(Boolean);
       S.custom.push({ id: rid(), name, muscle: $('#cMuscle').value, equipment: $('#cEquip').value, secondary: [], steps, tips: [] });
-      save(); render(); searchModal(name); return;
+      saveNow(); render(); searchModal(name); return;
     }
     case 'delCustom': {
       if (!confirm('Diese eigene Übung löschen?')) return;
@@ -1098,8 +1100,10 @@ async function act(a, d) {
     case 'delSession': if (!confirm('Diesen Eintrag löschen?')) return; S.history = S.history.filter((h) => h.id !== d.id); break;
     default: return;
   }
-  save(); render();
+  if (SYNC_NOW.has(a)) saveNow(); else save();
+  render();
 }
+const SYNC_NOW = new Set(['addDay', 'delDay', 'moveDay', 'addEx', 'delEx', 'moveEx', 'perSet', 'uniform', 'addPlanSet', 'delPlanSet', 'delSession', 'delCustom', 'altUse', 'altBack', 'altSwap']);
 
 document.addEventListener('click', (e) => {
   if (e.target.id === 'modal') { closeModal(); return; }
@@ -1148,7 +1152,7 @@ document.addEventListener('change', async (e) => {
   if (f === 'photo') {
     const file = el.files && el.files[0]; if (!file) return;
     toast('Foto wird hochgeladen…');
-    try { const url = await uploadPhoto(await resizeImage(file)); S.photos[norm(el.dataset.name)] = url; save(); exModal(el.dataset.name); render(); toast('Foto gespeichert'); }
+    try { const url = await uploadPhoto(await resizeImage(file)); S.photos[norm(el.dataset.name)] = url; saveNow(); exModal(el.dataset.name); render(); toast('Foto gespeichert'); }
     catch (err) { toast(err.message || 'Hochladen fehlgeschlagen'); }
     return;
   }
@@ -1159,7 +1163,7 @@ document.addEventListener('change', async (e) => {
   if (f === 'userName') {
     const name = el.value.trim(); if (!name) { el.value = S.name; return; }
     S.name = name; const u = users.find((x) => x.id === uid); if (u) u.name = name;
-    save(); render();
+    saveNow(); render();
   }
 });
 
@@ -1171,12 +1175,13 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState === 'visible' && uid && S && pending) doSave();
+  if (document.visibilityState === 'visible' && uid && S && pending && retry) doSave();
+  if (document.visibilityState === 'hidden' && uid && S && pending && tab === 'plan') doSave();
   if (document.visibilityState !== 'visible' || !uid || !S || pending || document.activeElement?.dataset?.f || !$('#modal').hidden) return;
   try { S = await api('/users/' + uid); ensure(); render(); } catch {}
 });
 
-window.addEventListener('online', () => { if (uid && S && pending) { status('Verbunden, sende…'); doSave(); } else if (S) status(''); });
+window.addEventListener('online', () => { if (uid && S && pending && retry) { status('Verbunden, sende…'); doSave(); } else if (S && !pending) status(''); });
 window.addEventListener('offline', () => { if (S) status(offlineText()); });
 
 /* App installierbar und offline nutzbar machen */
