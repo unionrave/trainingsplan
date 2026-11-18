@@ -153,6 +153,7 @@ function readRaw(req, max) {
 const COMMONS = process.env.COMMONS_API || 'https://commons.wikimedia.org/w/api.php';
 const IMG_HOST = process.env.IMG_HOST || 'upload.wikimedia.org'; // nur von hier werden Bilder geladen
 const OFF = process.env.OFF_API || 'https://world.openfoodfacts.org'; // Open Food Facts: freie Lebensmitteldatenbank (Markenprodukte, Barcodes)
+const OFF_COUNTRY = process.env.OFF_COUNTRY === undefined ? 'germany' : process.env.OFF_COUNTRY;
 const OFF_FIELDS = 'code,product_name,brands,nutriments';
 function normFood(pr) {
   const n = pr.nutriments || {}, name = String(pr.product_name || '').trim();
@@ -307,8 +308,13 @@ const server = http.createServer(async (req, res) => {
         }
         const q = String(sp.get('q') || '').trim().slice(0, 80);
         if (q.length < 2) return send(res, 400, { error: 'Bitte einen Suchbegriff eingeben' });
-        const j = await offGet('/cgi/search.pl?search_simple=1&action=process&json=1&page_size=24&fields=' + OFF_FIELDS + '&search_terms=' + encodeURIComponent(q));
-        return send(res, 200, { results: ((j && j.products) || []).map(normFood).filter(Boolean).slice(0, 20) });
+        // Standard: Produkte, die in Deutschland verkauft werden (OFF_COUNTRY, leer = weltweit), beliebteste zuerst; ohne Treffer weltweit
+        const base = '/cgi/search.pl?search_simple=1&action=process&json=1&page_size=24&lc=de&fields=' + OFF_FIELDS + '&search_terms=' + encodeURIComponent(q);
+        const geo = OFF_COUNTRY ? '&tagtype_0=countries&tag_contains_0=contains&tag_0=' + encodeURIComponent(OFF_COUNTRY) + '&sort_by=unique_scans_n' : '';
+        let list = [];
+        if (geo) { const j = await offGet(base + geo); list = ((j && j.products) || []).map(normFood).filter(Boolean); }
+        if (!list.length) { const j = await offGet(base); list = ((j && j.products) || []).map(normFood).filter(Boolean); }
+        return send(res, 200, { results: list.slice(0, 20) });
       } catch (e) {
         return send(res, 502, { error: 'Lebensmittelsuche nicht erreichbar: ' + String(e.message || e) });
       }
