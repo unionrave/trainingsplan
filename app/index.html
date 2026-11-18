@@ -518,7 +518,7 @@ function suggestion(ex) {
 }
 function resW(ex, ss, i) {
   const v = filled(ss, 'w', ex.id, i); if (v !== undefined) return v;
-  if (ex.plan && ex.plan[i]) return ex.plan[i].w;
+  if (ex.plan && ex.plan[i] && num(ex.plan[i].w) > 0) return ex.plan[i].w; // 0 im Einzelplan gilt als „nicht geplant“
   const l = lastOf(eName(ex, ss));
   const det = l && l.detail ? l.detail.filter((s) => !s.warm) : [];
   if (det.length) return (det[i] || det[det.length - 1]).w;
