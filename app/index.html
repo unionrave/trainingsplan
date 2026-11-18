@@ -516,11 +516,15 @@ function suggestion(ex) {
   if (b && ja === 'fail' && b.weight > 0 && b.weight < a.weight - 0.01) return { type: 'down', from: a.weight, to: b.weight, delta: b.weight - a.weight };
   return null;
 }
-function resW(ex, ss, i) {
+function resW(ex, ss, i) { // Vorrang: eingegeben, dann letzte Einheit, dann Plan
   const v = filled(ss, 'w', ex.id, i); if (v !== undefined) return v;
-  if (ex.plan && ex.plan[i] && num(ex.plan[i].w) > 0) return ex.plan[i].w; // 0 im Einzelplan gilt als „nicht geplant“
-  const l = lastOf(eName(ex, ss));
-  const det = l && l.detail ? l.detail.filter((s) => !s.warm) : [];
+  const l = lastOf(eName(ex, ss)), all = l && l.detail ? l.detail : [];
+  if (ex.plan && ex.plan[i]) {
+    const warm = isWarm(ex, i), pool = all.filter((s) => !!s.warm === warm);
+    if (pool.length) { const k = ex.plan.slice(0, i).filter((_, j) => isWarm(ex, j) === warm).length; return (pool[k] || pool[pool.length - 1]).w; } // gleicher Satztyp an gleicher Stelle
+    return ex.plan[i].w;
+  }
+  const det = all.filter((s) => !s.warm);
   if (det.length) return (det[i] || det[det.length - 1]).w;
   return ex.weight;
 }
