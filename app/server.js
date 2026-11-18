@@ -20,6 +20,8 @@ const STATIC = {
   '/': ['index.html', 'text/html; charset=utf-8'],
   '/index.html': ['index.html', 'text/html; charset=utf-8'],
   '/library.json': ['library.json', 'application/json; charset=utf-8'],
+  '/foods.json': ['foods.json', 'application/json; charset=utf-8'],
+  '/nutrition.js': ['nutrition.js', 'text/javascript; charset=utf-8'],
 };
 
 fs.mkdirSync(USERS_DIR, { recursive: true });
@@ -150,6 +152,21 @@ function readRaw(req, max) {
 }
 const COMMONS = process.env.COMMONS_API || 'https://commons.wikimedia.org/w/api.php';
 const IMG_HOST = process.env.IMG_HOST || 'upload.wikimedia.org'; // nur von hier werden Bilder geladen
+const OFF = process.env.OFF_API || 'https://world.openfoodfacts.org'; // Open Food Facts: freie Lebensmitteldatenbank (Markenprodukte, Barcodes)
+const OFF_FIELDS = 'code,product_name,brands,nutriments';
+function normFood(pr) {
+  const n = pr.nutriments || {}, name = String(pr.product_name || '').trim();
+  let kcal = Number(n['energy-kcal_100g']); if (!(kcal >= 0)) { const kj = Number(n['energy_100g']); kcal = kj >= 0 ? kj / 4.184 : NaN; }
+  const p = Number(n['proteins_100g']), c = Number(n['carbohydrates_100g']), f = Number(n['fat_100g']);
+  if (!name || !(kcal >= 0) || [p, c, f].some((x) => !(x >= 0))) return null;
+  const r = (x) => Math.round(x * 10) / 10;
+  return { name: name.slice(0, 80), brand: String(pr.brands || '').split(',')[0].trim().slice(0, 40), code: String(pr.code || '').replace(/\D/g, '').slice(0, 14), kcal: Math.round(kcal), p: r(p), c: r(c), f: r(f) };
+}
+async function offGet(pathAndQuery) {
+  const r = await fetch(OFF + pathAndQuery, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(12000) });
+  if (!r.ok) throw new Error('Status ' + r.status);
+  return r.json();
+}
 const UA = 'Trainingsplan/1.0 (selbst gehostete Trainingsplan-App)';
 const stripHtml = (h) => String(h || '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/\s+/g, ' ').trim().slice(0, 120);
 async function searchImages(q) {
@@ -273,6 +290,27 @@ const server = http.createServer(async (req, res) => {
         return send(res, 201, { url: await fetchImage(url) });
       } catch (e) {
         return send(res, 502, { error: 'Bildersuche nicht erreichbar: ' + String(e.message || e) });
+      }
+    }
+
+    if (p === '/api/foodsearch' && method === 'GET') {
+      const cu = a && a.r === 'u' ? read(a.id) : null;
+      if (!a || (a.r === 'u' && !(cu && a.k === fp(cu)))) return send(res, 401, { error: 'Nicht angemeldet' });
+      const sp = new URL(req.url, 'http://x').searchParams;
+      try {
+        const code = String(sp.get('code') || '').trim();
+        if (code) { // Barcode (EAN) nachschlagen
+          if (!/^\d{8,14}$/.test(code)) return send(res, 400, { error: 'Ungültige Barcode-Nummer' });
+          const j = await offGet('/api/v2/product/' + code + '.json?fields=' + OFF_FIELDS);
+          const food = j && j.product ? normFood({ ...j.product, code }) : null;
+          return send(res, 200, { results: food ? [food] : [] });
+        }
+        const q = String(sp.get('q') || '').trim().slice(0, 80);
+        if (q.length < 2) return send(res, 400, { error: 'Bitte einen Suchbegriff eingeben' });
+        const j = await offGet('/cgi/search.pl?search_simple=1&action=process&json=1&page_size=24&fields=' + OFF_FIELDS + '&search_terms=' + encodeURIComponent(q));
+        return send(res, 200, { results: ((j && j.products) || []).map(normFood).filter(Boolean).slice(0, 20) });
+      } catch (e) {
+        return send(res, 502, { error: 'Lebensmittelsuche nicht erreichbar: ' + String(e.message || e) });
       }
     }
 

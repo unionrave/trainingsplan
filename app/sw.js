@@ -2,9 +2,9 @@
    - Programmdateien: zuerst Netz (damit Updates nach einem git pull sofort ankommen), sonst Zwischenspeicher
    - Schriften, Symbole, Übungsbilder: aus dem Zwischenspeicher, beim ersten Mal geladen
    - /api/ wird nie abgefangen; Speichern und Synchronisieren macht die App selbst */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL = 'tp-shell-' + VERSION, RUN = 'tp-run-' + VERSION;
-const PRECACHE = ['/', '/library.json', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png',
+const PRECACHE = ['/', '/library.json', '/foods.json', '/nutrition.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png',
   '/fonts/big-shoulders-display-latin-700-normal.woff2', '/fonts/big-shoulders-display-latin-800-normal.woff2',
   '/fonts/barlow-latin-400-normal.woff2', '/fonts/barlow-latin-500-normal.woff2', '/fonts/barlow-latin-600-normal.woff2'];
 
@@ -44,6 +44,7 @@ self.addEventListener('fetch', (e) => {
   const req = e.request, url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api/')) return;
   if (req.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') return e.respondWith(networkFirst(req, '/', 4000));
-  if (url.pathname === '/library.json') return e.respondWith(revalidate(req));
+  if (url.pathname === '/nutrition.js') return e.respondWith(networkFirst(req, '/nutrition.js', 4000));
+  if (url.pathname === '/library.json' || url.pathname === '/foods.json') return e.respondWith(revalidate(req));
   if (/^\/(fonts|icons|img)\//.test(url.pathname) || url.pathname === '/manifest.webmanifest') return e.respondWith(cacheFirst(req).catch(() => new Response('', { status: 504 })));
 });

@@ -271,6 +271,35 @@ body[data-tab=train] #timer{bottom:88px}
 @media (min-width:700px){.modal{align-items:center}.sheet{border-radius:26px;border-bottom:1px solid var(--line)}}
 @media (max-width:380px){.set{width:44px;height:44px;font-size:20px}.sf input{font-size:21px;height:46px}.dayname{font-size:30px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Ernährung */
+.pf{display:grid;gap:4px;font-size:13px;color:var(--muted);flex:1;min-width:0}
+.pf input,.pf select{width:100%;color:var(--text);font-size:16px}
+.pfi{display:flex;align-items:center;gap:6px}.pfi small{color:var(--muted);font-size:13px;flex:none}
+.dnav{margin-bottom:12px}.dlabel{display:grid;text-align:center}.dlabel b{font:800 22px var(--display)}
+.nhint{border-color:var(--blue)}
+.nsumrow{display:flex;align-items:center;gap:16px}
+.ringbox{position:relative;width:132px;height:132px;flex:none}
+.nring{width:100%;height:100%;transform:rotate(-90deg)}
+.nring circle{fill:none;stroke-width:11}.nring .trk{stroke:var(--line)}
+.nring .arc{stroke:var(--ok);stroke-linecap:round;transition:stroke-dashoffset .4s}.nring.over .arc{stroke:var(--danger)}
+.ringtxt{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ringtxt b{font:800 30px/1 var(--display)}.ringtxt small{color:var(--muted);font-size:12px}
+.nstats{display:grid;gap:8px;flex:1;min-width:0}.nstats b{font:800 22px/1 var(--display);display:block}.nstats small{color:var(--muted);font-size:12px}
+.neg{color:var(--danger)}.pos{color:var(--ok)}
+.mrow{margin-bottom:8px}.mhead{display:flex;justify-content:space-between;font-size:14px}.mhead small{color:var(--muted);font-weight:500}
+.mtrack{height:9px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:3px}.mtrack i{display:block;height:100%;border-radius:99px}
+i.mp,.dot.mp{background:#4a8dff}i.mc,.dot.mc{background:#f5c431}i.mf,.dot.mf{background:#ff6b70}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.dist{display:flex;height:12px;border-radius:99px;overflow:hidden;gap:2px;margin:10px 0 6px}.dist i{display:block}
+.mealhead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.nrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 0;border:0;border-top:1px solid var(--line);background:none;color:var(--text);font:500 15px var(--body);cursor:pointer}
+.nrow .grow{display:grid;gap:1px}.nrow small{font-size:12px}
+.nk{font:800 20px var(--display);flex:none}.nk small{font:500 12px var(--body);color:var(--muted)}
+.nprev{margin:12px 0}.nprevk b{font:800 34px var(--display)}
+.lsub{font:700 13px var(--body);color:var(--muted);margin:10px 2px 2px}
+.crow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:15px}
+.crow.total{font-weight:800;border-bottom:2px solid var(--line)}
 </style>
 </head>
 <body data-tab="train">
@@ -285,6 +314,7 @@ body[data-tab=train] #timer{bottom:88px}
 <div id="modal" class="modal" hidden><div class="sheet" id="sheet"></div></div>
 <div id="toast"></div><div id="printarea" aria-hidden="true"></div>
 
+<script src="/nutrition.js"></script>
 <script>
 const $ = (s) => document.querySelector(s);
 const rid = () => Math.random().toString(36).slice(2, 9);
@@ -383,6 +413,7 @@ async function flush() { if (pending) { clearTimeout(saveTimer); await doSave();
 function ensure() {
   S.days = S.days || []; S.history = S.history || []; S.sessions = S.sessions || {}; S.custom = S.custom || []; S.photos = S.photos || {}; S.credits = S.credits || {};
   S.settings = Object.assign({ rest: 90, auto: true, sound: true, vibrate: true, rir: false }, S.settings || {});
+  if (typeof nutriEnsure === 'function') nutriEnsure();
 }
 function authFail(id) {
   pending = false; clearTimeout(saveTimer);
@@ -861,7 +892,7 @@ function renderBar() {
     ? `<select id="userSel" aria-label="Person">${users.map((u) => `<option value="${esc(u.id)}" ${u.id === uid ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</select>${tr ? '<button class="ic" data-a="newUser" title="Person hinzufügen">＋</button>' : ''}<button class="ic" data-a="logout" title="Abmelden" aria-label="Abmelden">⎋</button>`
     : '';
   $('#userbar').innerHTML = ub; $('#userbar').style.display = ub ? '' : 'none';
-  const tabs = [['train', 'Training'], ['plan', 'Plan'], ['lib', 'Bibliothek'], ['hist', 'Verlauf']];
+  const tabs = [['train', 'Training'], ['plan', 'Plan'], ['lib', 'Bibliothek'], ['hist', 'Verlauf'], ['nutri', 'Ernährung']];
   if (tr) tabs.unshift(['over', 'Übersicht']);
   $('#tabs').innerHTML = loggedIn ? tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-a="tab" data-tab="${k}">${l}</button>`).join('') : '';
   document.body.dataset.tab = tab;
@@ -874,7 +905,7 @@ function render() {
   if (loginFor && !auth.trainer) { app.innerHTML = viewLogin(); return; }
   if (tab === 'over' && auth.trainer) { app.innerHTML = viewOver(); return; }
   if (!S) { app.innerHTML = auth.trainer ? '<div class="card muted">Wähle oben eine Person oder öffne sie in der Übersicht.</div>' : '<p class="muted">Lade…</p>'; return; }
-  app.innerHTML = tab === 'train' ? viewTrain() : tab === 'plan' ? viewPlan() : tab === 'lib' ? viewLib() : viewHist();
+  app.innerHTML = tab === 'train' ? viewTrain() : tab === 'plan' ? viewPlan() : tab === 'lib' ? viewLib() : tab === 'nutri' ? viewNutri() : viewHist();
 }
 
 /* ---------- Aktionen ---------- */
@@ -898,7 +929,8 @@ function finish() {
     if (!ex.plan && !swapped(ex, ss)) ex.weight = top.w; // Plan-Gewicht für das nächste Mal übernehmen (bei Einzelplanung bleibt der Plan unverändert)
   });
   if (!items.length) { toast('Noch keine Sätze abgehakt'); return; }
-  S.history.push({ id: rid(), date: new Date().toISOString(), day: day.name, items });
+  const dur = ss.t0 ? Math.max(10, Math.min(180, Math.round((Date.now() - ss.t0) / 60000))) : 0; // Minuten, 10 bis 180
+  S.history.push({ id: rid(), date: new Date().toISOString(), day: day.name, items, ...(dur ? { dur } : {}) });
   delete S.sessions[day.id];
   stopRest(); saveNow(); render(); toast('Training gespeichert 💪');
 }
@@ -913,7 +945,7 @@ async function deleteUser(id) {
 
 async function act(a, d) {
   switch (a) {
-    case 'tab': if (tab === 'plan' && d.tab !== 'plan') flush(); tab = d.tab; if (tab === 'over') await refreshUsers(); render(); return;
+    case 'tab': if ((tab === 'plan' || tab === 'nutri') && d.tab !== tab) flush(); tab = d.tab; if (tab === 'over') await refreshUsers(); render(); return;
     case 'day': curDay = d.day; render(); return;
     case 'rest': unlockAudio(); startRest(+d.s); return;
     case 'tstep': adjustRest(+d.s); return;
@@ -1061,6 +1093,7 @@ async function act(a, d) {
       const day = findDay(curDay), ss = sess(day), i = +d.i, was = ss.sets[d.ex][i];
       ss.sets[d.ex][i] = !was;
       if (!was) {
+        if (!ss.t0) ss.t0 = Date.now(); // Beginn der Einheit (für den Kalorienverbrauch)
         unlockAudio();
         const all = day.exercises.every((ex) => padSets(ss.sets[ex.id], ex.sets).every(Boolean));
         if (S.settings.auto && !all) startRest(findEx(day.id, d.ex).rest || S.settings.rest);
@@ -1098,7 +1131,7 @@ async function act(a, d) {
     case 'delEx': { const day = findDay(d.day); day.exercises = day.exercises.filter((x) => x.id !== d.ex); break; }
     case 'moveEx': { const day = findDay(d.day); move(day.exercises, day.exercises.findIndex((x) => x.id === d.ex), +d.dir); break; }
     case 'delSession': if (!confirm('Diesen Eintrag löschen?')) return; S.history = S.history.filter((h) => h.id !== d.id); break;
-    default: return;
+    default: if (typeof nutriAct === 'function' && (await nutriAct(a, d)) !== undefined) return; return;
   }
   if (SYNC_NOW.has(a)) saveNow(); else save();
   render();
@@ -1117,6 +1150,7 @@ document.addEventListener('click', (e) => {
 document.addEventListener('input', (e) => {
   const el = e.target, f = el.dataset.f, d = el.dataset, v = el.value;
   if (!f || f === 'userName' || f === 'histEx' || el.type === 'checkbox') return;
+  if (f && f.startsWith('n.') && typeof nutriInput === 'function') { nutriInput(f, el, v); return; }
   if (f === 'altQ') { $('#altList').innerHTML = altListHTML(v); return; }
   if (f === 'libQ') { libF.q = v; $('#libList').innerHTML = libListHTML(); return; }
   if (f === 'dayName') findDay(d.day).name = v;
@@ -1149,6 +1183,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', async (e) => {
   const el = e.target, f = el.dataset.f;
   if (el.id === 'userSel') { await loadUser(el.value); return; }
+  if (f && f.startsWith('n.') && typeof nutriChange === 'function') { nutriChange(f, el); return; }
   if (f === 'photo') {
     const file = el.files && el.files[0]; if (!file) return;
     toast('Foto wird hochgeladen…');
