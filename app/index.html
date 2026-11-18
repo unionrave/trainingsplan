@@ -294,7 +294,7 @@ i.mp,.dot.mp{background:#4a8dff}i.mc,.dot.mc{background:#f5c431}i.mf,.dot.mf{bac
 .dist{display:flex;height:12px;border-radius:99px;overflow:hidden;gap:2px;margin:10px 0 6px}.dist i{display:block}
 .mealhead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .nrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 0;border:0;border-top:1px solid var(--line);background:none;color:var(--text);font:500 15px var(--body);cursor:pointer}
-.nrow .grow{display:grid;gap:1px}.nrow small{font-size:12px}
+.nrow.cardio{cursor:default}.nrow .grow{display:grid;gap:1px}.nrow small{font-size:12px}
 .nk{font:800 20px var(--display);flex:none}.nk small{font:500 12px var(--body);color:var(--muted)}
 .nprev{margin:12px 0}.nprevk b{font:800 34px var(--display)}
 .lsub{font:700 13px var(--body);color:var(--muted);margin:10px 2px 2px}
@@ -726,7 +726,7 @@ function rirHTML(ex, ss, i) {
   return `<div class="rirrow" role="group" aria-label="Wiederholungen in Reserve, Satz ${i + 1}"><span>Reserve</span>${[0, 1, 2, 3].map((v) => `<button class="rirc ${cur === v ? 'on' : ''}" data-a="rir" data-ex="${ex.id}" data-i="${i}" data-v="${v}" aria-pressed="${cur === v}">${v === 3 ? '3+' : v}</button>`).join('')}<small class="muted" style="white-space:nowrap">übrig</small></div>`;
 }
 function viewTrain() {
-  if (!S.days.length) return '<div class="card muted">Noch keine Trainingstage. Lege im Tab „Plan“ einen an.</div>';
+  if (!S.days.length) return '<div class="card muted">Noch keine Trainingstage. Lege im Tab „Plan“ einen an.</div>' + (typeof cardioHTML === 'function' ? cardioHTML() : '');
   if (!findDay(curDay)) curDay = S.days[0].id;
   const day = findDay(curDay), ss = sess(day);
   let total = 0, done = 0;
@@ -760,6 +760,7 @@ function viewTrain() {
     <div class="bar"><div style="width:${total ? Math.round(done / total * 100) : 0}%"></div></div>
     <div class="chips"><span class="muted small" style="align-self:center">⏱ Pause</span>${[60, 90, 120, 180].map((s) => `<button class="chip" data-a="rest" data-s="${s}">${fmtT(s)}</button>`).join('')}</div>
     ${cards || '<div class="card muted">Dieser Tag hat noch keine Übungen.</div>'}
+    ${typeof cardioHTML === 'function' ? cardioHTML() : ''}
     <div class="sticky"><button class="btn primary block${total && done === total ? ' complete' : ''}" data-a="finish">Training abschließen (${done}/${total} Sätze)</button></div>`;
 }
 
@@ -865,7 +866,8 @@ function chart(name) {
 }
 function viewHist() {
   const names = [...new Set(S.history.flatMap((h) => h.items.map((i) => i.name)))].sort((a, b) => a.localeCompare(b, 'de'));
-  if (!names.length) return '<div class="card muted">Noch keine abgeschlossenen Trainings. Schließe im Tab „Training“ eine Einheit ab, dann erscheint hier der Verlauf.</div>';
+  const cardioH = typeof cardioHistHTML === 'function' ? cardioHistHTML() : '';
+  if (!names.length) return '<div class="card muted">Noch keine abgeschlossenen Trainings. Schließe im Tab „Training“ eine Einheit ab, dann erscheint hier der Verlauf.</div>' + cardioH;
   if (!names.includes(histEx)) histEx = names[0];
   const list = [...S.history].reverse().map((h) => `<div class="card"><div class="hist-item"><div>
       <b>${esc(h.day)}</b> <span class="muted small">${fmtDate(h.date, true)}</span>
@@ -873,7 +875,7 @@ function viewHist() {
       <button class="ic danger" data-a="delSession" data-id="${h.id}" title="Eintrag löschen">🗑</button></div></div>`).join('');
   return `<div class="card"><h2>Gewichtsverlauf</h2>
     <select data-f="histEx" style="width:100%">${names.map((n) => `<option ${n === histEx ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
-    ${chart(histEx)}</div><h2 style="margin:16px 0 8px">Einheiten</h2>${list}`;
+    ${chart(histEx)}</div><h2 style="margin:16px 0 8px">Einheiten</h2>${list}${cardioH}`;
 }
 
 function viewOver() {

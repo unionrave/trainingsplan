@@ -7,6 +7,14 @@ const ACT = [[1.2, 'Überwiegend sitzend (Büro, Schule)'], [1.35, 'Teils aktiv 
 const GOALS = { cut: ['Abnehmen', -15, 2.0], maintain: ['Gewicht halten', 0, 1.6], bulk: ['Aufbauen', 10, 1.8] }; // Name, Kalorienanpassung %, Protein g/kg
 const MET_STRENGTH = 5.0; // Krafttraining, mittlere bis hohe Intensität (Compendium of Physical Activities)
 
+const CARDIO = { // Gerät: [Name, MET leicht/mittel/intensiv, Hinweise] (Werte nach dem Compendium of Physical Activities, gerundet)
+  treadmill: ['Laufband', [4.3, 8.3, 11], ['Gehen, ca. 5–6 km/h', 'Joggen, ca. 8–9 km/h', 'Laufen, ab ca. 11 km/h']],
+  bike: ['Fitnessrad', [3.5, 6.8, 8.8], ['locker, ca. 50–80 W', 'zügig, ca. 100–150 W', 'hart, ab ca. 180 W']],
+  stair: ['Stairmaster', [6, 9, 11], ['langsam', 'mittleres Tempo', 'schnell']],
+  cross: ['Crosstrainer', [4.6, 5.8, 7.5], ['locker', 'zügig', 'hart']],
+  custom: ['Eigenes', [4, 6, 8], ['locker', 'mittel', 'intensiv']],
+};
+const cui = { type: 'treadmill', lvl: 1 };
 let FOODS = [];
 (async () => { try { FOODS = (await (await fetch('/foods.json')).json()).foods || []; if (typeof tab !== 'undefined' && tab === 'nutri') render(); } catch {} })();
 
@@ -20,7 +28,7 @@ function nutriEnsure() {
   if (!S) return;
   const n = (S.nutri = S.nutri || {});
   n.profile = Object.assign({ sex: 'm', age: '', height: '', weight: '', activity: 1.35, goal: 'maintain', adj: '', prot: '', fat: 25 }, n.profile || {});
-  n.foods = n.foods || []; n.log = n.log || {}; n.templates = n.templates || []; n.week = n.week || {};
+  S.cardio = S.cardio || []; n.foods = n.foods || []; n.log = n.log || {}; n.templates = n.templates || []; n.week = n.week || {};
   if (!nui.date) nui.date = dstr();
 }
 
@@ -34,17 +42,21 @@ function trainKcal(h, weight) { // geschätzter Verbrauch einer Einheit: MET × 
   return MET_STRENGTH * weight * min / 60;
 }
 const localDay = (iso) => dstr(new Date(iso));
+const cardioKcal = (c, weight) => (c.kcal > 0 ? c.kcal : CARDIO[c.type][1][c.lvl] * (weight || 75) * c.min / 60);
+const cardioName = (c) => (c.type === 'custom' && c.name ? c.name : CARDIO[c.type][0]);
 function trainOn(ds, weight) {
-  return S.history.filter((h) => localDay(h.date) === ds).reduce((a, h) => a + trainKcal(h, weight), 0);
+  return S.history.filter((h) => localDay(h.date) === ds).reduce((a, h) => a + trainKcal(h, weight), 0)
+    + S.cardio.filter((c) => localDay(c.date) === ds).reduce((a, c) => a + cardioKcal(c, weight), 0);
 }
 function trainAvg(p) { // durchschnittlicher Trainingsverbrauch pro Tag (letzte bis zu 28 Tage), sonst aus dem Plan geschätzt
   const w = num(p.weight), now = Date.now(), win = 28 * 864e5;
   const recent = S.history.filter((h) => now - new Date(h.date).getTime() <= win);
-  if (recent.length) {
-    const oldest = Math.min(...recent.map((h) => new Date(h.date).getTime()));
+  const rc = S.cardio.filter((c) => now - new Date(c.date).getTime() <= win);
+  if (recent.length || rc.length) {
+    const oldest = Math.min(...[...recent, ...rc].map((h) => new Date(h.date).getTime()));
     const days = Math.max(7, Math.min(28, Math.ceil((now - oldest) / 864e5) + 1));
-    const sum = recent.reduce((a, h) => a + trainKcal(h, w), 0);
-    return { perDay: sum / days, n: recent.length, days, src: 'hist' };
+    const sum = recent.reduce((a, h) => a + trainKcal(h, w), 0) + rc.reduce((a, c) => a + cardioKcal(c, w), 0);
+    return { perDay: sum / days, n: recent.length, nc: rc.length, days, src: 'hist' };
   }
   const per = S.days.length ? S.days.length * trainKcal({ dur: 60 }, w) / 7 : 0;
   return { perDay: per, n: 0, days: 0, src: 'plan' };
@@ -91,7 +103,7 @@ function viewToday() {
   const ds = nui.date, T = targets(), p = S.nutri.profile, log = dayLog(ds), tot = sum(log), isToday = ds === dstr();
   const label = isToday ? 'Heute' : dateObj(ds).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
   const tk = profOK(p) ? trainOn(ds, num(p.weight)) : 0, exp = T ? T.base + tk : 0;
-  const trained = S.history.filter((h) => localDay(h.date) === ds).map((h) => h.day).join(', ');
+  const trained = [...S.history.filter((h) => localDay(h.date) === ds).map((h) => h.day), ...S.cardio.filter((c) => localDay(c.date) === ds).map(cardioName)].join(', ');
   const wd = (dateObj(ds).getDay() + 6) % 7, tpl = S.nutri.templates.find((t) => t.id === S.nutri.week[wd]);
   const nav = `<div class="row dnav"><button class="ic" data-a="nDay" data-d="-1" aria-label="Vorheriger Tag">‹</button><div class="grow dlabel"><b>${esc(label)}</b>${isToday ? `<small class="muted">${esc(dateObj(ds).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' }))}</small>` : ''}</div>${isToday ? '' : '<button class="chip" data-a="nToday">Heute</button>'}<button class="ic" data-a="nDay" data-d="1" aria-label="Nächster Tag">›</button></div>`;
   const hint = !T ? `<div class="card nhint"><b>Kalorienziel einrichten</b><div class="muted small" style="margin:4px 0 10px">Trag Größe, Gewicht und Alter ein, dann berechnet die App Tagesbedarf, Kalorienziel und Makros.</div><button class="btn primary" data-a="nSub" data-k="profile">Profil ausfüllen</button></div>` : '';
@@ -145,7 +157,7 @@ function profileCalcHTML() {
     <div class="crow"><span><i class="dot mp"></i>Protein (${f1(T.protG / T.w)} g pro kg)</span><b>${f0(T.protG)} g</b></div>
     <div class="crow"><span><i class="dot mf"></i>Fett (${f0(num(p.fat) || 25)} % der Energie)</span><b>${f0(T.fatG)} g</b></div>
     <div class="crow"><span><i class="dot mc"></i>Kohlenhydrate (Rest)</span><b>${f0(T.carbG)} g</b></div>
-    <p class="muted small" style="margin:10px 0 0">${T.tr.src === 'hist' ? `Training: ${T.tr.n} Einheiten in den letzten ${T.tr.days} Tagen, im Mittel ca. ${f0(T.tr.perDay)} kcal pro Tag.` : 'Noch keine Einheiten geloggt: Training wird aus der Anzahl der Plantage mit 60 Minuten pro Einheit geschätzt.'} Grundumsatz nach Mifflin-St Jeor, Training mit MET ${f1(MET_STRENGTH)} × Gewicht × Dauer.${T.floored ? ' Das Ziel liegt am Grundumsatz, weil die Anpassung sonst darunter läge.' : ''}</p>`;
+    <p class="muted small" style="margin:10px 0 0">${T.tr.src === 'hist' ? `Training: ${T.tr.n} Krafteinheiten${T.tr.nc ? ' und ' + T.tr.nc + ' Cardio-Einheiten' : ''} in den letzten ${T.tr.days} Tagen, im Mittel ca. ${f0(T.tr.perDay)} kcal pro Tag.` : 'Noch keine Einheiten geloggt: Training wird aus der Anzahl der Plantage mit 60 Minuten pro Einheit geschätzt.'} Grundumsatz nach Mifflin-St Jeor, Training mit MET (Kraft ${f1(MET_STRENGTH)}, Cardio je nach Gerät und Intensität) × Gewicht × Dauer; bei Cardio zählt eine eingetragene Gerätekalorienzahl stattdessen.${T.floored ? ' Das Ziel liegt am Grundumsatz, weil die Anpassung sonst darunter läge.' : ''}</p>`;
 }
 
 function viewProfile() {
@@ -242,6 +254,24 @@ async function nutriAct(a, d) {
   if (!/^n[A-Z]/.test(a)) return undefined;
   nutriEnsure();
   switch (a) {
+    case 'nCardioOpen': cardioModal(); return 1;
+    case 'nCType': case 'nCLvl': {
+      const ph = { min: $('#nCMin').value, kc: $('#nCKcal').value, dt: $('#nCDate').value, nm: $('#nCName') ? $('#nCName').value : '' };
+      if (a === 'nCType') cui.type = d.k; else cui.lvl = +d.l;
+      cardioModal(); $('#nCMin').value = ph.min; $('#nCKcal').value = ph.kc; $('#nCDate').value = ph.dt; if ($('#nCName')) $('#nCName').value = ph.nm; cardioPrev(); return 1;
+    }
+    case 'nCardioSave': {
+      const min = Math.round(num($('#nCMin').value)); if (!(min > 0 && min <= 600)) { toast('Bitte die Dauer in Minuten eingeben'); return 1; }
+      const kc = Math.round(num($('#nCKcal').value)), name = $('#nCName') ? $('#nCName').value.trim() : '';
+      if (cui.type === 'custom' && name.length < 2) { toast('Bitte einen Namen eingeben'); return 1; }
+      const day = $('#nCDate').value || dstr();
+      S.cardio.push({ id: rid(), date: new Date(day + 'T12:00:00').toISOString(), type: cui.type, lvl: cui.lvl, min, ...(cui.type === 'custom' ? { name } : {}), ...(kc > 0 ? { kcal: kc } : {}) });
+      closeModal(); await saveNow(); render(); toast('Cardio gespeichert'); return 1;
+    }
+    case 'nCardioDel': {
+      if (!confirm('Diesen Cardio-Eintrag löschen?')) return 1;
+      S.cardio = S.cardio.filter((c) => c.id !== d.id); await saveNow(); render(); return 1;
+    }
     case 'nSub': nui.sub = d.k; render(); return 1;
     case 'nDay': nui.date = dstr(new Date(dateObj(nui.date).getTime() + (+d.d) * 864e5)); render(); return 1;
     case 'nToday': nui.date = dstr(); render(); return 1;
@@ -336,6 +366,7 @@ function nutriInput(f, el, v) {
   nutriEnsure();
   if (f === 'n.q') { nui.pick.q = v; if (/^\d{8,14}$/.test(v.trim())) $('#nMsg').textContent = 'Barcode erkannt: „Online suchen“ tippen.'; else if ($('#nMsg').textContent.startsWith('Barcode')) $('#nMsg').textContent = ''; $('#nList').innerHTML = pickListHTML(); return; }
   if (f === 'n.g') { updPrev(); return; }
+  if (f === 'n.cmin' || f === 'n.ckcal') { cardioPrev(); return; }
   if (f === 'n.tname') { const t = tplById(el.dataset.id); if (t) { t.name = v; save(); } return; }
   if (f.startsWith('n.p.')) { S.nutri.profile[f.slice(4)] = v; save(); const c = $('#nCalc'); if (c) c.innerHTML = profileCalcHTML(); }
 }
@@ -343,4 +374,40 @@ function nutriChange(f, el) {
   nutriEnsure();
   if (f === 'n.week') { if (el.value) S.nutri.week[el.dataset.d] = el.value; else delete S.nutri.week[el.dataset.d]; save(); return; }
   if (f === 'n.p.sex' || f === 'n.p.activity' || f === 'n.p.goal') { S.nutri.profile[f.slice(4)] = f === 'n.p.activity' ? num(el.value) : el.value; save(); render(); }
+}
+
+/* ---------- Cardio ---------- */
+function cardioListHTML(list, w, withDate) {
+  return list.map((c) => `<div class="nrow cardio"><span class="grow"><b>${esc(cardioName(c))}</b><small class="muted">${withDate ? esc(dateObj(localDay(c.date)).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })) + ' · ' : ''}${f0(c.min)} Min.${c.kcal > 0 ? ' · Gerätewert' : ' · ' + ['leicht', 'mittel', 'intensiv'][c.lvl]}</small></span><span class="nk">${f0(cardioKcal(c, w))}<small> kcal</small></span><button class="ic danger" data-a="nCardioDel" data-id="${c.id}" aria-label="Cardio löschen">🗑</button></div>`).join('');
+}
+function cardioHTML() { // Karte im Tab Training
+  nutriEnsure();
+  const w = num(S.nutri.profile.weight) || 75, ds = dstr(), list = S.cardio.filter((c) => localDay(c.date) === ds);
+  return `<div class="card"><div class="mealhead"><div class="grow"><b class="exname" style="font-size:22px">Cardio</b>${list.length ? `<div class="muted small">Heute ${f0(list.reduce((a, c) => a + cardioKcal(c, w), 0))} kcal</div>` : '<div class="muted small">Laufband, Rad, Stairmaster, Crosstrainer</div>'}</div><button class="btn" data-a="nCardioOpen">＋ Erfassen</button></div>${cardioListHTML(list, w)}</div>`;
+}
+function cardioHistHTML() { // Abschnitt im Tab Verlauf
+  nutriEnsure(); if (!S.cardio.length) return '';
+  const w = num(S.nutri.profile.weight) || 75;
+  return `<h2 style="margin:16px 0 8px">Cardio</h2><div class="card">${cardioListHTML([...S.cardio].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 60), w, true)}</div>`;
+}
+function cardioPrev() {
+  const hn = document.getElementById('nCHint'); if (hn) hn.textContent = CARDIO[cui.type][2][cui.lvl];
+  const el = document.getElementById('nCPrev'); if (!el) return;
+  const min = num(document.getElementById('nCMin').value), kc = num(document.getElementById('nCKcal').value), w = num(S.nutri.profile.weight) || 75;
+  const v = kc > 0 ? kc : CARDIO[cui.type][1][cui.lvl] * w * min / 60;
+  el.innerHTML = `<div class="nprevk"><b>${f0(v)}</b><small> kcal</small></div><div class="muted small">${kc > 0 ? 'Wert vom Gerät' : `MET ${f1(CARDIO[cui.type][1][cui.lvl])} × ${f0(w)} kg × ${f0(min)} Min.${num(S.nutri.profile.weight) ? '' : ' (Gewicht 75 kg angenommen, trag deins im Profil ein)'}`}</div>`;
+}
+function cardioModal() {
+  const T = CARDIO[cui.type];
+  openModal(`<div class="row"><h2 class="grow" style="margin:0">Cardio erfassen</h2><button class="ic" data-a="closeModal" aria-label="Schließen">✕</button></div>
+    <div class="chips" style="flex-wrap:wrap;margin-top:10px">${Object.entries(CARDIO).map(([k, v]) => `<button class="chip ${cui.type === k ? 'on' : ''}" data-a="nCType" data-k="${k}">${v[0]}</button>`).join('')}</div>
+    ${cui.type === 'custom' ? '<input id="nCName" class="block" style="width:100%;margin-bottom:10px" maxlength="40" placeholder="Name, z. B. Rudergerät">' : ''}
+    <div class="row"><label class="pf">Dauer<span class="pfi"><input id="nCMin" type="number" inputmode="numeric" min="1" data-f="n.cmin" value="30"><small>Min.</small></span></label>
+      <label class="pf">Datum<input id="nCDate" type="date" value="${dstr()}" max="${dstr()}"></label></div>
+    <div class="muted small">Intensität</div><div class="chips" style="margin-top:4px">${['Leicht', 'Mittel', 'Intensiv'].map((l, i) => `<button class="chip ${cui.lvl === i ? 'on' : ''}" data-a="nCLvl" data-l="${i}">${l}</button>`).join('')}</div>
+    <div id="nCHint" class="muted small">${esc(T[2][cui.lvl])}</div>
+    <label class="pf" style="margin-top:10px">Kalorien vom Gerät (optional, ersetzt die Schätzung)<span class="pfi"><input id="nCKcal" type="number" inputmode="numeric" min="0" data-f="n.ckcal" placeholder="z. B. 320"><small>kcal</small></span></label>
+    <div id="nCPrev" class="card nprev"></div>
+    <button class="btn primary block" data-a="nCardioSave">Speichern</button>`);
+  cardioPrev();
 }
