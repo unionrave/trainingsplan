@@ -21,6 +21,7 @@ const STATIC = {
   '/index.html': ['index.html', 'text/html; charset=utf-8'],
   '/library.json': ['library.json', 'application/json; charset=utf-8'],
   '/foods.json': ['foods.json', 'application/json; charset=utf-8'],
+  '/zxing.min.js': ['zxing.min.js', 'text/javascript; charset=utf-8'],
   '/nutrition.js': ['nutrition.js', 'text/javascript; charset=utf-8'],
 };
 
@@ -154,6 +155,17 @@ const COMMONS = process.env.COMMONS_API || 'https://commons.wikimedia.org/w/api.
 const IMG_HOST = process.env.IMG_HOST || 'upload.wikimedia.org'; // nur von hier werden Bilder geladen
 const OFF = process.env.OFF_API || 'https://world.openfoodfacts.org'; // Open Food Facts: freie Lebensmitteldatenbank (Markenprodukte, Barcodes)
 const OFF_COUNTRY = process.env.OFF_COUNTRY === undefined ? 'germany' : process.env.OFF_COUNTRY;
+// KI-Foto-Analyse (OpenAI). Ohne OPENAI_API_KEY ist sie aus. Das Foto wird nur durchgereicht, nicht gespeichert.
+const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
+const OPENAI_BASE = process.env.OPENAI_BASE || 'https://api.openai.com';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-6.2-astra';
+const PHOTO_LIMIT = Number(process.env.MEALPHOTO_LIMIT) || 20; // Analysen pro Person und Tag
+const photoUse = new Map();
+const MEAL_SCHEMA = { type: 'object', additionalProperties: false, required: ['items', 'note'], properties: {
+  note: { type: 'string' },
+  items: { type: 'array', maxItems: 12, items: { type: 'object', additionalProperties: false, required: ['name', 'grams', 'kcal', 'protein', 'carbs', 'fat', 'confidence'],
+    properties: { name: { type: 'string' }, grams: { type: 'number' }, kcal: { type: 'number' }, protein: { type: 'number' }, carbs: { type: 'number' }, fat: { type: 'number' }, confidence: { type: 'string', enum: ['low', 'medium', 'high'] } } } } } };
+const MEAL_PROMPT = 'Du bist Ernährungsexperte. Analysiere das Foto einer Mahlzeit. Zerlege sie in einzelne Lebensmittel (deutsche Namen, kurz, z. B. "Spaghetti, gekocht", "Hackfleischsoße"). Schätze für jedes die verzehrte Menge in Gramm anhand von Tellergröße, Besteck und Proportionen sowie die Gesamtwerte für genau diese Menge: kcal, Protein, Kohlenhydrate und Fett in Gramm. Die Kalorien sollen zu den Makros passen (4/4/9 kcal pro g). Füge sichtbare Öle, Saucen und Beläge hinzu. Gib bei unsicheren Schätzungen confidence "low" an. Erkennst du kein Essen, gib eine leere Liste zurück und erkläre es in note. Antworte nur im vorgegebenen JSON.';
 const OFF_FIELDS = 'code,product_name,brands,nutriments';
 function normFood(pr) {
   const n = pr.nutriments || {}, name = String(pr.product_name || '').trim();
@@ -291,6 +303,39 @@ const server = http.createServer(async (req, res) => {
         return send(res, 201, { url: await fetchImage(url) });
       } catch (e) {
         return send(res, 502, { error: 'Bildersuche nicht erreichbar: ' + String(e.message || e) });
+      }
+    }
+
+    if (p === '/api/mealphoto' && method === 'POST') {
+      const cu = a && a.r === 'u' ? read(a.id) : null;
+      if (!a || (a.r === 'u' && !(cu && a.k === fp(cu)))) return send(res, 401, { error: 'Nicht angemeldet' });
+      if (!OPENAI_KEY) return send(res, 503, { error: 'Foto-Analyse ist nicht eingerichtet: Beim Server fehlt OPENAI_API_KEY.' });
+      const who = a.r === 'u' ? a.id : 'trainer', day = new Date().toISOString().slice(0, 10), key = who + day;
+      if ((photoUse.get(key) || 0) >= PHOTO_LIMIT) return send(res, 429, { error: 'Tageslimit für Foto-Analysen erreicht (' + PHOTO_LIMIT + ').' });
+      const body = await readBody(req);
+      const img = String(body.image || '');
+      if (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(img) || img.length > 1.8e6) return send(res, 400, { error: 'Bild ungültig oder zu groß' });
+      photoUse.set(key, (photoUse.get(key) || 0) + 1);
+      try {
+        const r = await fetch(OPENAI_BASE + '/v1/chat/completions', {
+          method: 'POST', signal: AbortSignal.timeout(60000),
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + OPENAI_KEY },
+          body: JSON.stringify({ model: OPENAI_MODEL, max_completion_tokens: 1500,
+            response_format: { type: 'json_schema', json_schema: { name: 'meal', strict: true, schema: MEAL_SCHEMA } },
+            messages: [{ role: 'system', content: MEAL_PROMPT }, { role: 'user', content: [
+              { type: 'text', text: 'Bitte analysiere diese Mahlzeit.' + (body.note ? ' Hinweis der Person: ' + String(body.note).slice(0, 200) : '') },
+              { type: 'image_url', image_url: { url: img, detail: 'high' } }] }] }) });
+        const j = await r.json().catch(() => null);
+        if (!r.ok) { photoUse.set(key, photoUse.get(key) - 1); return send(res, 502, { error: 'OpenAI: ' + ((j && j.error && j.error.message) || ('Fehler ' + r.status)) }); }
+        let out; try { out = JSON.parse(j.choices[0].message.content); } catch { return send(res, 502, { error: 'Antwort der KI war nicht lesbar' }); }
+        const n = (v, max) => Math.max(0, Math.min(max, Math.round((Number(v) || 0) * 10) / 10));
+        const items = (Array.isArray(out.items) ? out.items : []).slice(0, 12).map((x) => ({
+          name: String(x.name || '').slice(0, 60), grams: n(x.grams, 3000), kcal: n(x.kcal, 5000), protein: n(x.protein, 500), carbs: n(x.carbs, 800), fat: n(x.fat, 500),
+          confidence: ['low', 'medium', 'high'].includes(x.confidence) ? x.confidence : 'medium' })).filter((x) => x.name && x.grams > 0);
+        return send(res, 200, { items, note: String(out.note || '').slice(0, 300) });
+      } catch (e) {
+        photoUse.set(key, Math.max(0, (photoUse.get(key) || 1) - 1));
+        return send(res, 502, { error: 'Foto-Analyse nicht erreichbar: ' + String(e.message || e) });
       }
     }
 

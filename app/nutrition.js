@@ -190,7 +190,7 @@ function recentFoods() {
 function poolSearch(q) {
   const tok = norm(q).split(/\s+/).filter(Boolean);
   const all = [...S.nutri.foods.map((x) => toFood(x, 'mine')), ...FOODS.map((x) => toFood(x, 'lib'))];
-  return all.filter((f) => { const h = norm(foodName(f) + ' ' + f.cat); return tok.every((t) => h.includes(t)); })
+  return all.filter((f) => { const h = norm(foodName(f) + ' ' + f.cat + ' ' + (f.code || '')); return tok.every((t) => h.includes(t)); })
     .sort((a, b) => (norm(b.name).startsWith(tok[0]) - norm(a.name).startsWith(tok[0])) || ((b.src === 'mine') - (a.src === 'mine')) || a.name.localeCompare(b.name, 'de')).slice(0, 40);
 }
 function foodRow(f, i, label) {
@@ -217,6 +217,7 @@ function openPicker(meal, tplId, q = '') {
   const title = tplId ? 'Zur Vorlage hinzufügen' : 'Lebensmittel hinzufügen';
   openModal(`<div class="row"><h2 class="grow" style="margin:0">${title}<small class="muted" style="font:500 14px var(--body);display:block">${esc(meal)}</small></h2><button class="btn" data-a="nDone">Fertig</button></div>
     <div class="row" style="margin-top:10px"><input id="nQ" class="grow" type="search" data-f="n.q" maxlength="80" placeholder="Lebensmittel oder Barcode suchen" autocomplete="off" value="${esc(q)}"></div>
+    <div class="row" style="flex-wrap:wrap"><button class="btn grow" data-a="nScan">📷 Barcode scannen</button><label class="btn grow">🍽 Foto analysieren<input type="file" accept="image/*" capture="environment" data-f="n.photo" hidden></label></div>
     <div class="row" style="flex-wrap:wrap"><button class="btn grow" data-a="nOnline">🔎 Online suchen</button><button class="btn grow" data-a="nNewFood">＋ Eigenes Lebensmittel</button></div>
     <div id="nMsg" class="muted small"></div><div id="nList" class="altlist">${pickListHTML()}</div>`);
 }
@@ -254,6 +255,13 @@ async function nutriAct(a, d) {
   if (!/^n[A-Z]/.test(a)) return undefined;
   nutriEnsure();
   switch (a) {
+    case 'nScan': scanModal(); return 1;
+    case 'nAiAdd': {
+      const A = nui.ai; if (!A) return 1;
+      const on = A.items.filter((x) => x.on && x.g > 0); if (!on.length) { toast('Nichts ausgewählt'); return 1; }
+      on.forEach((x) => { const e = { id: rid(), meal: A.meal, name: x.name, g: Math.round(x.g), per: { k: x.kcal / x.grams * 100, p: x.protein / x.grams * 100, c: x.carbs / x.grams * 100, f: x.fat / x.grams * 100 }, ai: true }; if (A.tplId) tplById(A.tplId).items.push(e); else dayLog(nui.date).push(e); });
+      nui.ai = null; closeModal(); afterChange(); toast(on.length + ' Einträge hinzugefügt'); return 1;
+    }
     case 'nCardioOpen': cardioModal(); return 1;
     case 'nCType': case 'nCLvl': {
       const ph = { min: $('#nCMin').value, kc: $('#nCKcal').value, dt: $('#nCDate').value, nm: $('#nCName') ? $('#nCName').value : '' };
@@ -366,12 +374,22 @@ function nutriInput(f, el, v) {
   nutriEnsure();
   if (f === 'n.q') { nui.pick.q = v; if (/^\d{8,14}$/.test(v.trim())) $('#nMsg').textContent = 'Barcode erkannt: „Online suchen“ tippen.'; else if ($('#nMsg').textContent.startsWith('Barcode')) $('#nMsg').textContent = ''; $('#nList').innerHTML = pickListHTML(); return; }
   if (f === 'n.g') { updPrev(); return; }
+  if (f === 'n.aig') { const x = nui.ai.items[+el.dataset.i], g = num(v); x.g = g > 0 ? g : 0; const t = aiScale(x, x.g), e = document.getElementById('aiv' + el.dataset.i); if (e) e.textContent = `${f0(t.k)} kcal · P ${f0(t.p)} · KH ${f0(t.c)} · F ${f0(t.f)}`; document.getElementById('aiTot').innerHTML = aiTotals(); return; }
   if (f === 'n.cmin' || f === 'n.ckcal') { cardioPrev(); return; }
   if (f === 'n.tname') { const t = tplById(el.dataset.id); if (t) { t.name = v; save(); } return; }
   if (f.startsWith('n.p.')) { S.nutri.profile[f.slice(4)] = v; save(); const c = $('#nCalc'); if (c) c.innerHTML = profileCalcHTML(); }
 }
 function nutriChange(f, el) {
   nutriEnsure();
+  if (f === 'n.photo') { const file = el.files && el.files[0]; el.value = ''; if (file) analyzePhoto(file); return; }
+  if (f === 'n.bcfile') {
+    const file = el.files && el.files[0]; el.value = ''; if (!file) return;
+    $('#nScanMsg').textContent = 'Barcode wird gelesen…';
+    decodeBarcodeFile(file).then((c) => { if (c && barcodeOK(c)) lookupCode(c, nui.pick ? nui.pick.meal : MEALS[0]); else $('#nScanMsg').textContent = 'Kein Barcode erkannt. Nimm das Foto näher und gerade auf, oder tippe die Nummer ein.'; }).catch((e) => { $('#nScanMsg').textContent = e.message; });
+    return;
+  }
+  if (f === 'n.aion') { nui.ai.items[+el.dataset.i].on = el.checked; document.getElementById('aiTot').innerHTML = aiTotals(); return; }
+  if (f === 'n.aimeal') { nui.ai.meal = el.value; return; }
   if (f === 'n.week') { if (el.value) S.nutri.week[el.dataset.d] = el.value; else delete S.nutri.week[el.dataset.d]; save(); return; }
   if (f === 'n.p.sex' || f === 'n.p.activity' || f === 'n.p.goal') { S.nutri.profile[f.slice(4)] = f === 'n.p.activity' ? num(el.value) : el.value; save(); render(); }
 }
@@ -410,4 +428,98 @@ function cardioModal() {
     <div id="nCPrev" class="card nprev"></div>
     <button class="btn primary block" data-a="nCardioSave">Speichern</button>`);
   cardioPrev();
+}
+
+/* ---------- Barcode-Scanner ---------- */
+let scan = null;
+function stopScan() { if (scan) { scan.stop = true; try { scan.stream && scan.stream.getTracks().forEach((t) => t.stop()); } catch {} scan = null; } }
+window.addEventListener('load', () => { const _cm = closeModal, _om = openModal; closeModal = function () { stopScan(); _cm(); }; openModal = function (h) { stopScan(); _om(h); }; });
+const loadZX = () => window.ZXing ? Promise.resolve() : new Promise((ok, no) => { const el = document.createElement('script'); el.src = '/zxing.min.js'; el.onload = ok; el.onerror = () => no(new Error('Der Scanner konnte nicht geladen werden (offline?)')); document.head.appendChild(el); });
+const barcodeOK = (c) => /^\d{8,14}$/.test(c);
+async function zxDecode(canvas) { // liefert Text oder null
+  await loadZX();
+  const Z = window.ZXing, hints = new Map([[Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.UPC_E]], [Z.DecodeHintType.TRY_HARDER, true]]);
+  const r = new Z.MultiFormatReader(); r.setHints(hints);
+  try { return r.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(canvas)))).getText(); } catch { return null; }
+}
+function scanFallbackHTML(msg) {
+  return `<p class="muted small" style="margin:10px 0">${esc(msg)}</p><label class="btn block">📷 Foto vom Barcode aufnehmen<input type="file" accept="image/*" capture="environment" data-f="n.bcfile" hidden></label>
+    <p class="muted small">Oder die Nummer unter dem Barcode in das Suchfeld tippen und „Online suchen“ wählen.</p>`;
+}
+async function scanModal() {
+  const meal = nui.pick ? nui.pick.meal : MEALS[0];
+  openModal(`<div class="row"><h2 class="grow" style="margin:0">Barcode scannen</h2><button class="ic" data-a="nBack" aria-label="Abbrechen">✕</button></div>
+    <div class="scanbox"><video id="nVid" playsinline muted autoplay></video><i class="scanline"></i></div><div id="nScanMsg" class="muted small" style="margin-top:8px">Halte den Barcode ruhig in den Rahmen.</div><div id="nScanFb"></div>`);
+  const st = (scan = { stop: false, stream: null });
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $('#nScanFb').innerHTML = scanFallbackHTML('Die Kamera ist hier nicht verfügbar (die Seite braucht HTTPS).'); return; }
+  try { st.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }, audio: false }); }
+  catch (e) { if (!st.stop) $('#nScanFb').innerHTML = scanFallbackHTML(e && e.name === 'NotAllowedError' ? 'Kamerazugriff wurde nicht erlaubt. Erlaube ihn in den Browser-Einstellungen oder nutze ein Foto.' : 'Keine Kamera gefunden.'); return; }
+  if (st.stop) { st.stream.getTracks().forEach((t) => t.stop()); return; }
+  const v = $('#nVid'); v.srcObject = st.stream; try { await v.play(); } catch {}
+  let native = null;
+  if ('BarcodeDetector' in window) { try { native = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] }); } catch {} }
+  if (!native) { try { await loadZX(); } catch (e) { $('#nScanFb').innerHTML = scanFallbackHTML(e.message); } }
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d', { willReadFrequently: true });
+  const tick = async () => {
+    if (st.stop) return;
+    let code = null;
+    try {
+      if (v.videoWidth) {
+        if (native) { const r = await native.detect(v); code = r[0] && r[0].rawValue; }
+        else if (window.ZXing) { cv.width = v.videoWidth; cv.height = v.videoHeight; ctx.drawImage(v, 0, 0); code = await zxDecode(cv); }
+      }
+    } catch {}
+    if (st.stop) return;
+    if (code && barcodeOK(code)) { stopScan(); if (navigator.vibrate) navigator.vibrate(60); lookupCode(code, meal); return; }
+    setTimeout(tick, native ? 120 : 220);
+  };
+  tick();
+}
+async function lookupCode(code, meal) {
+  const p = nui.pick || { meal, tplId: null }, local = S.nutri.foods.find((x) => x.code === code);
+  const kind = p.tplId ? 'tpl' : 'log';
+  if (local) { nui.pick = { meal: p.meal, tplId: p.tplId, q: '' }; openAmount({ food: toFood(local, 'mine'), g: (local.portions && local.portions[0] && local.portions[0].g) || 100, meal: p.meal, kind, tplId: p.tplId }); return; }
+  openPicker(p.meal, p.tplId, code);
+  await nutriAct('nOnline', {});
+  if (nui.online.length === 1) await nutriAct('nPick', { i: nui.items.length - 1 });
+  else if (!nui.online.length) { const m = $('#nMsg'); if (m && !/Keine Verbindung/.test(m.textContent)) m.textContent = 'Barcode ' + code + ' ist online nicht bekannt. Lege das Lebensmittel mit „Eigenes Lebensmittel“ an, beim nächsten Scan wird es gefunden.'; }
+}
+async function decodeBarcodeFile(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const im = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('Bild nicht lesbar')); i.src = url; });
+    const k = Math.min(1, 1600 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    if ('BarcodeDetector' in window) { try { const r = await new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] }).detect(c); if (r[0]) return r[0].rawValue; } catch {} }
+    return await zxDecode(c);
+  } finally { URL.revokeObjectURL(url); }
+}
+
+/* ---------- Foto-Analyse (OpenAI über den Server) ---------- */
+const blobToDataURL = (b) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => no(new Error('Bild nicht lesbar')); r.readAsDataURL(b); });
+const aiScale = (x, g) => { const k = x.grams > 0 ? g / x.grams : 0; return { k: x.kcal * k, p: x.protein * k, c: x.carbs * k, f: x.fat * k }; };
+async function analyzePhoto(file) {
+  const meal = nui.pick ? nui.pick.meal : MEALS[0], tplId = nui.pick ? nui.pick.tplId : null;
+  openModal(`<h2 style="margin:0 0 8px">Foto wird analysiert…</h2><p class="muted">Das dauert meist 5 bis 20 Sekunden.</p><div class="spin" aria-hidden="true"></div>`);
+  try {
+    const dataUrl = await blobToDataURL(await resizeImage(file, 1280));
+    const r = await api('/mealphoto', { method: 'POST', body: JSON.stringify({ image: dataUrl }) });
+    nui.ai = { meal, tplId, note: r.note, items: r.items.map((x) => ({ ...x, g: x.grams, on: true })) };
+    aiModal();
+  } catch (e) {
+    openModal(`<h2 style="margin:0 0 8px">Analyse nicht möglich</h2><p>${esc(e.network ? 'Keine Verbindung: Die Foto-Analyse braucht Internet.' : e.message)}</p><button class="btn block" data-a="nBack">Zurück</button>`);
+  }
+}
+function aiTotals() { const t = nui.ai.items.filter((x) => x.on).reduce((a, x) => { const v = aiScale(x, x.g); return { k: a.k + v.k, p: a.p + v.p, c: a.c + v.c, f: a.f + v.f }; }, { k: 0, p: 0, c: 0, f: 0 }); return `Summe: <b>${f0(t.k)} kcal</b> · P ${f0(t.p)} · KH ${f0(t.c)} · F ${f0(t.f)}`; }
+function aiModal() {
+  const A = nui.ai;
+  openModal(`<div class="row"><h2 class="grow" style="margin:0">Ergebnis der Analyse</h2><button class="ic" data-a="nBack" aria-label="Verwerfen">✕</button></div>
+    ${A.items.length ? '' : '<p>Auf dem Foto wurde kein Essen erkannt.</p>'}${A.note ? `<p class="muted small">${esc(A.note)}</p>` : ''}
+    <div class="stack" style="margin-top:8px">${A.items.map((x, i) => { const v = aiScale(x, x.g); return `<div class="airow"><label class="aichk"><input type="checkbox" data-f="n.aion" data-i="${i}" ${x.on ? 'checked' : ''} aria-label="${esc(x.name)} übernehmen"></label>
+      <span class="grow"><b>${esc(x.name)}</b>${x.confidence === 'low' ? ' <small class="warn">unsicher</small>' : ''}<small class="muted" id="aiv${i}" style="display:block">${f0(v.k)} kcal · P ${f0(v.p)} · KH ${f0(v.c)} · F ${f0(v.f)}</small></span>
+      <span class="pfi"><input type="number" inputmode="decimal" min="1" data-f="n.aig" data-i="${i}" value="${x.g}" style="width:76px" aria-label="Gramm ${esc(x.name)}"><small>g</small></span></div>`; }).join('')}</div>
+    <div id="aiTot" class="card nprev">${aiTotals()}</div>
+    ${A.tplId ? '' : `<label class="pf">Mahlzeit<select data-f="n.aimeal">${MEALS.map((m) => `<option ${m === A.meal ? 'selected' : ''}>${m}</option>`).join('')}</select></label>`}
+    <p class="muted small">KI-Schätzung: Mengen und Werte können deutlich danebenliegen. Prüfe sie und passe die Gramm an. Das Foto wurde zur Analyse an OpenAI gesendet und nicht gespeichert.</p>
+    <div class="row"><button class="btn primary grow" data-a="nAiAdd" ${A.items.length ? '' : 'disabled'}>Ausgewählte hinzufügen</button></div>`);
 }

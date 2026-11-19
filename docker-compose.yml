@@ -24,6 +24,11 @@ services:
       - PORT=3000
       - DATA_DIR=/data
       - TRAINER_PIN=123456    # BITTE ÄNDERN: Zugang des Trainers zu allen Plänen
+      # Optional: Foto-Analyse von Mahlzeiten über OpenAI (braucht einen API-Key von platform.openai.com, nicht das ChatGPT-Abo).
+      # Ohne Key bleibt die Funktion aus. Modell mit OPENAI_MODEL änderbar, Tageslimit pro Person mit MEALPHOTO_LIMIT.
+      # - OPENAI_API_KEY=sk-...
+      # - OPENAI_MODEL=gpt-6.2-astra
+      # - MEALPHOTO_LIMIT=20
     ports:
       - "8085:3000"           # Host-Port links bei Bedarf ändern
     volumes:
