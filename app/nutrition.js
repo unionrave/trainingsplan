@@ -172,6 +172,7 @@ function viewProfile() {
     </div></div>
   <div class="card"><h2>Feineinstellung</h2><p class="muted small" style="margin:0 0 8px">Leer lassen für die Standardwerte des gewählten Ziels.</p>
     <div class="row" style="margin:0;align-items:flex-end">${inp('adj', 'Kalorien ± %', String(g[1]), '1', '%')}${inp('prot', 'Protein', String(g[2]), '0.1', 'g/kg')}${inp('fat', 'Fett', '25', '1', '%')}</div></div>
+  <div class="card"><h2>KI-Foto-Analyse</h2><div id="nKeyBox">${keyBoxHTML()}</div></div>
   <div class="card"><h2>Dein Bedarf</h2><div id="nCalc">${profileCalcHTML()}</div></div>
   <p class="muted small">Die Werte sind Schätzungen aus Standardformeln. Sie ersetzen keine ärztliche oder ernährungsberatende Empfehlung, bei Vorerkrankungen oder Unsicherheit bitte fachlichen Rat einholen.</p>`;
 }
@@ -257,6 +258,18 @@ async function nutriAct(a, d) {
   nutriEnsure();
   switch (a) {
     case 'nScan': scanModal(); return 1;
+    case 'nGoKey': closeModal(); nui.sub = 'profile'; render(); return 1;
+    case 'nKeySave': {
+      const key = ($('#nKeyIn').value || '').trim(); if (!key) { toast('Bitte den Key einfügen'); return 1; }
+      try { const r = await api(`/users/${uid}/aikey`, { method: 'PUT', body: JSON.stringify({ key }) }); nui.key = { ...(nui.key || {}), set: true, last4: r.last4 }; toast('API-Key gespeichert'); }
+      catch (e) { toast(e.message); return 1; }
+      $('#nKeyBox').innerHTML = keyBoxHTML(); return 1;
+    }
+    case 'nKeyDel': {
+      if (!confirm('Deinen API-Key vom Server entfernen?')) return 1;
+      try { await api(`/users/${uid}/aikey`, { method: 'DELETE' }); nui.key = { ...(nui.key || {}), set: false, last4: '' }; toast('API-Key entfernt'); } catch (e) { toast(e.message); return 1; }
+      $('#nKeyBox').innerHTML = keyBoxHTML(); return 1;
+    }
     case 'nAiAdd': {
       const A = nui.ai; if (!A) return 1;
       const on = A.items.filter((x) => x.on && x.g > 0); if (!on.length) { toast('Nichts ausgewählt'); return 1; }
@@ -515,7 +528,7 @@ async function analyzePhoto(file) {
     nui.ai = { meal, tplId, note: r.note, items: r.items.map((x) => ({ ...x, g: x.grams, on: true })) };
     aiModal();
   } catch (e) {
-    openModal(`<h2 style="margin:0 0 8px">Analyse nicht möglich</h2><p>${esc(e.network ? 'Keine Verbindung: Die Foto-Analyse braucht Internet.' : e.message)}</p><button class="btn block" data-a="nBack">Zurück</button>`);
+    openModal(`<h2 style="margin:0 0 8px">Analyse nicht möglich</h2><p>${esc(e.network ? 'Keine Verbindung: Die Foto-Analyse braucht Internet.' : e.message)}</p>${/API-Key/.test(e.message) && !auth.trainer ? '<button class="btn primary block" style="margin-bottom:8px" data-a="nGoKey">Key im Profil eintragen</button>' : ''}<button class="btn block" data-a="nBack">Zurück</button>`);
   }
 }
 function aiTotals() { const t = nui.ai.items.filter((x) => x.on).reduce((a, x) => { const v = aiScale(x, x.g); return { k: a.k + v.k, p: a.p + v.p, c: a.c + v.c, f: a.f + v.f }; }, { k: 0, p: 0, c: 0, f: 0 }); return `Summe: <b>${f0(t.k)} kcal</b> · P ${f0(t.p)} · KH ${f0(t.c)} · F ${f0(t.f)}`; }
@@ -530,4 +543,20 @@ function aiModal() {
     ${A.tplId ? '' : `<label class="pf">Mahlzeit<select data-f="n.aimeal">${MEALS.map((m) => `<option ${m === A.meal ? 'selected' : ''}>${m}</option>`).join('')}</select></label>`}
     <p class="muted small">KI-Schätzung: Mengen und Werte können deutlich danebenliegen. Prüfe sie und passe die Gramm an. Das Foto wurde zur Analyse an OpenAI gesendet und nicht gespeichert.</p>
     <div class="row"><button class="btn primary grow" data-a="nAiAdd" ${A.items.length ? '' : 'disabled'}>Ausgewählte hinzufügen</button></div>`);
+}
+
+/* ---------- Eigener OpenAI-Key ---------- */
+nui.key = null;
+function keyBoxHTML() {
+  if (auth.trainer) return '<p class="muted small" style="margin:0">Den API-Key trägt jede Person selbst ein, nachdem sie sich mit ihrer PIN angemeldet hat. Als Trainer kannst du die Foto-Analyse nicht für andere nutzen.</p>';
+  if (!nui.key) { loadKey(); return '<p class="muted small" style="margin:0">Wird geladen…</p>'; }
+  const k = nui.key;
+  return `<p class="small" style="margin:0 0 8px">${k.set ? `Dein API-Key ist hinterlegt (endet auf <b>${esc(k.last4)}</b>). Die Foto-Analyse läuft über deinen OpenAI-Account.` : 'Für die Foto-Analyse einer Mahlzeit brauchst du einen eigenen OpenAI-API-Key. Ohne Key bleibt sie aus.'}</p>
+    <div class="row" style="margin:0"><input id="nKeyIn" class="grow" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${k.set ? 'Neuen Key einfügen, um ihn zu ersetzen' : 'sk-…'}"><button class="btn primary" data-a="nKeySave">Speichern</button>${k.set ? '<button class="btn danger" data-a="nKeyDel">Entfernen</button>' : ''}</div>
+    <p class="muted small" style="margin:8px 0 0">Den Key erstellst du unter <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com/api-keys</a> (dort braucht das Konto Guthaben, ein ChatGPT-Abo reicht nicht). Der Key wird verschlüsselt auf dem Server gespeichert, nicht an dein Handy zurückgegeben und von niemandem außer dir verwendet, auch nicht vom Trainer. Die Kosten laufen über dein OpenAI-Konto, Modell: ${esc(k.model || 'gpt-6-luna')}.</p>`;
+}
+async function loadKey() {
+  if (nui.keyLoading) return; nui.keyLoading = true;
+  try { nui.key = await api(`/users/${uid}/aikey`); } catch (e) { nui.key = { set: false, last4: '', model: '' }; }
+  nui.keyLoading = false; const b = document.getElementById('nKeyBox'); if (b) b.innerHTML = keyBoxHTML();
 }

@@ -156,10 +156,16 @@ const IMG_HOST = process.env.IMG_HOST || 'upload.wikimedia.org'; // nur von hier
 const OFF = process.env.OFF_API || 'https://world.openfoodfacts.org'; // Open Food Facts: freie Lebensmitteldatenbank (Markenprodukte, Barcodes)
 const OFF_COUNTRY = process.env.OFF_COUNTRY === undefined ? 'germany' : process.env.OFF_COUNTRY;
 // KI-Foto-Analyse (OpenAI). Ohne OPENAI_API_KEY ist sie aus. Das Foto wird nur durchgereicht, nicht gespeichert.
-const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_BASE = process.env.OPENAI_BASE || 'https://api.openai.com';
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-6.2-astra';
-const PHOTO_LIMIT = Number(process.env.MEALPHOTO_LIMIT) || 20; // Analysen pro Person und Tag
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-6-luna';
+const PHOTO_LIMIT = Number(process.env.MEALPHOTO_LIMIT) || 100; // Analysen pro Person und Tag (Schutz vor Schleifen; die Kosten trägt der Key der Person)
+// Jede Person hinterlegt ihren eigenen OpenAI-API-Key. Er wird verschlüsselt (AES-256-GCM, Schlüssel aus dem Server-Secret) in DATA_DIR/keys abgelegt und nie an den Browser zurückgegeben.
+const KEYS_DIR = path.join(DATA_DIR, 'keys'); fs.mkdirSync(KEYS_DIR, { recursive: true });
+const keyFile = (id) => path.join(KEYS_DIR, id + '.key');
+const KEY_ENC = () => crypto.createHash('sha256').update(Buffer.concat([SECRET, Buffer.from('aikey')])).digest();
+function setAiKey(id, key) { const iv = crypto.randomBytes(12), c = crypto.createCipheriv('aes-256-gcm', KEY_ENC(), iv); const enc = Buffer.concat([c.update(key, 'utf8'), c.final()]); fs.writeFileSync(keyFile(id), Buffer.concat([iv, c.getAuthTag(), enc]), { mode: 0o600 }); }
+function getAiKey(id) { try { const b = fs.readFileSync(keyFile(id)), d = crypto.createDecipheriv('aes-256-gcm', KEY_ENC(), b.subarray(0, 12)); d.setAuthTag(b.subarray(12, 28)); return Buffer.concat([d.update(b.subarray(28)), d.final()]).toString('utf8'); } catch { return ''; } }
+const delAiKey = (id) => { try { fs.unlinkSync(keyFile(id)); } catch {} };
 const photoUse = new Map();
 const MEAL_SCHEMA = { type: 'object', additionalProperties: false, required: ['items', 'note'], properties: {
   note: { type: 'string' },
@@ -353,28 +359,52 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    const km = p.match(/^\/api\/users\/([a-z0-9-]+)\/aikey$/);
+    if (km) { // eigener OpenAI-Key: nur die Person selbst
+      const id = km[1], cu = validId(id) ? read(id) : null;
+      if (!cu) return send(res, 404, { error: 'Nicht gefunden' });
+      if (!(a && a.r === 'u' && a.id === id && a.k === fp(cu))) return send(res, 401, { error: 'Den API-Key kann nur die Person selbst verwalten (mit ihrer PIN angemeldet).' });
+      if (method === 'GET') { const k = getAiKey(id); return send(res, 200, { set: !!k, last4: k ? k.slice(-4) : '', model: OPENAI_MODEL }); }
+      if (method === 'DELETE') { delAiKey(id); return send(res, 200, { ok: true }); }
+      if (method === 'PUT') {
+        const body = await readBody(req), k = String(body.key || '').trim();
+        if (!/^sk-[A-Za-z0-9_\-]{20,200}$/.test(k)) return send(res, 400, { error: 'Das sieht nicht wie ein OpenAI-API-Key aus (beginnt mit „sk-“).' });
+        try {
+          const r = await fetch(OPENAI_BASE + '/v1/models', { headers: { Authorization: 'Bearer ' + k }, signal: AbortSignal.timeout(15000) });
+          if (r.status === 401 || r.status === 403) return send(res, 400, { error: 'OpenAI lehnt diesen Key ab. Prüfe, ob er vollständig und aktiv ist.' });
+        } catch (e) { return send(res, 502, { error: 'OpenAI ist gerade nicht erreichbar, der Key konnte nicht geprüft werden.' }); }
+        setAiKey(id, k); return send(res, 200, { ok: true, set: true, last4: k.slice(-4) });
+      }
+      return send(res, 405, { error: 'Nicht erlaubt' });
+    }
+
     if (p === '/api/mealphoto' && method === 'POST') {
       const cu = a && a.r === 'u' ? read(a.id) : null;
       if (!a || (a.r === 'u' && !(cu && a.k === fp(cu)))) return send(res, 401, { error: 'Nicht angemeldet' });
-      if (!OPENAI_KEY) return send(res, 503, { error: 'Foto-Analyse ist nicht eingerichtet: Beim Server fehlt OPENAI_API_KEY.' });
-      const who = a.r === 'u' ? a.id : 'trainer', day = new Date().toISOString().slice(0, 10), key = who + day;
+      if (a.r !== 'u') return send(res, 403, { error: 'Die Foto-Analyse nutzt den API-Key der Person. Melde dich dafür mit der PIN der Person an, nicht als Trainer.' });
+      const userKey = getAiKey(a.id);
+      if (!userKey) return send(res, 400, { error: 'Für die Foto-Analyse brauchst du deinen eigenen OpenAI-API-Key. Trag ihn unter Ernährung → Profil ein.', needKey: true });
+      const who = a.id, day = new Date().toISOString().slice(0, 10), key = who + day;
       if ((photoUse.get(key) || 0) >= PHOTO_LIMIT) return send(res, 429, { error: 'Tageslimit für Foto-Analysen erreicht (' + PHOTO_LIMIT + ').' });
       const body = await readBody(req);
       const img = String(body.image || '');
       if (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(img) || img.length > 1.8e6) return send(res, 400, { error: 'Bild ungültig oder zu groß' });
       photoUse.set(key, (photoUse.get(key) || 0) + 1);
       try {
-        const r = await fetch(OPENAI_BASE + '/v1/chat/completions', {
-          method: 'POST', signal: AbortSignal.timeout(60000),
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + OPENAI_KEY },
-          body: JSON.stringify({ model: OPENAI_MODEL, max_completion_tokens: 1500,
-            response_format: { type: 'json_schema', json_schema: { name: 'meal', strict: true, schema: MEAL_SCHEMA } },
-            messages: [{ role: 'system', content: MEAL_PROMPT }, { role: 'user', content: [
-              { type: 'text', text: 'Bitte analysiere diese Mahlzeit.' + (body.note ? ' Hinweis der Person: ' + String(body.note).slice(0, 200) : '') },
-              { type: 'image_url', image_url: { url: img, detail: 'high' } }] }] }) });
-        const j = await r.json().catch(() => null);
+        const payload = { model: OPENAI_MODEL, max_completion_tokens: 3000, reasoning_effort: 'low',
+          response_format: { type: 'json_schema', json_schema: { name: 'meal', strict: true, schema: MEAL_SCHEMA } },
+          messages: [{ role: 'system', content: MEAL_PROMPT }, { role: 'user', content: [
+            { type: 'text', text: 'Bitte analysiere diese Mahlzeit.' + (body.note ? ' Hinweis der Person: ' + String(body.note).slice(0, 200) : '') },
+            { type: 'image_url', image_url: { url: img, detail: 'high' } }] }] };
+        const call = (pl) => fetch(OPENAI_BASE + '/v1/chat/completions', { method: 'POST', signal: AbortSignal.timeout(90000), headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + userKey }, body: JSON.stringify(pl) });
+        let r = await call(payload), j = await r.json().catch(() => null);
+        if (r.status === 400 && j && j.error && /reasoning_effort|response_format|max_completion_tokens|json_schema/i.test(j.error.message || '')) { // Modell kennt eine Option nicht: ohne die optionalen Felder erneut
+          const { reasoning_effort, response_format, ...plain } = payload; plain.messages = [{ role: 'system', content: MEAL_PROMPT + ' Antworte ausschließlich mit JSON der Form {"note":"…","items":[{"name":"…","grams":0,"kcal":0,"protein":0,"carbs":0,"fat":0,"confidence":"low|medium|high"}]}.' }, payload.messages[1]];
+          r = await call(plain); j = await r.json().catch(() => null);
+        }
+        if (r.status === 401) { photoUse.set(key, photoUse.get(key) - 1); return send(res, 400, { error: 'OpenAI hat deinen API-Key abgelehnt. Trag unter Ernährung → Profil einen gültigen Key ein.', needKey: true }); }
         if (!r.ok) { photoUse.set(key, photoUse.get(key) - 1); return send(res, 502, { error: 'OpenAI: ' + ((j && j.error && j.error.message) || ('Fehler ' + r.status)) }); }
-        let out; try { out = JSON.parse(j.choices[0].message.content); } catch { return send(res, 502, { error: 'Antwort der KI war nicht lesbar' }); }
+        let out; try { const txt = String(j.choices[0].message.content || ''); out = JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1)); } catch { return send(res, 502, { error: 'Antwort der KI war nicht lesbar' }); }
         const n = (v, max) => Math.max(0, Math.min(max, Math.round((Number(v) || 0) * 10) / 10));
         const items = (Array.isArray(out.items) ? out.items : []).slice(0, 12).map((x) => ({
           name: String(x.name || '').slice(0, 60), grams: n(x.grams, 3000), kcal: n(x.kcal, 5000), protein: n(x.protein, 500), carbs: n(x.carbs, 800), fat: n(x.fat, 500),
@@ -502,7 +532,7 @@ const server = http.createServer(async (req, res) => {
         write(id, body);
         return send(res, 200, { ok: true });
       }
-      if (method === 'DELETE') { fs.unlinkSync(fileOf(id)); return send(res, 200, { ok: true }); }
+      if (method === 'DELETE') { fs.unlinkSync(fileOf(id)); delAiKey(id); return send(res, 200, { ok: true }); }
     }
     send(res, 404, { error: 'Nicht gefunden' });
   } catch (e) {
