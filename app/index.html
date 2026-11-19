@@ -479,8 +479,12 @@ const eName = (ex, ss) => { const a = ss && ss.alt && ss.alt[ex.id]; return a ? 
 const swapped = (ex, ss) => norm(eName(ex, ss)) !== norm(ex.name);
 const padSets = (arr, n) => { arr = arr || []; while (arr.length < n) arr.push(false); return arr.slice(0, n); };
 const move = (arr, i, dir) => { const j = i + dir; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; };
-function lastOf(name) {
+// Gewichte und Wiederholungen werden pro Trainingstag gemerkt: gleiche Übung an einem anderen Tag zählt nicht (ältere Einträge ohne dayId werden über den Tagesnamen zugeordnet)
+const dayOf = (ex) => S.days.find((d) => d.exercises.some((e) => e.id === ex.id));
+const inDay = (h, day) => !day || (h.dayId ? h.dayId === day.id : norm(h.day) === norm(day.name));
+function lastOf(name, day) {
   for (let i = S.history.length - 1; i >= 0; i--) {
+    if (!inDay(S.history[i], day)) continue;
     const it = S.history[i].items.find((x) => norm(x.name) === norm(name));
     if (it) return { ...it, date: S.history[i].date };
   }
@@ -498,9 +502,9 @@ function parseReps(s) {
   if (/^\d+$/.test(t)) return { lo: +t, hi: +t };
   return null; // z. B. „max“: keine Bewertung möglich
 }
-function histOf(name) {
+function histOf(name, day) {
   const out = [];
-  S.history.forEach((h) => h.items.forEach((it) => { if (norm(it.name) === norm(name) && it.detail) out.push({ ...it, date: h.date }); }));
+  S.history.forEach((h) => inDay(h, day) && h.items.forEach((it) => { if (norm(it.name) === norm(name) && it.detail) out.push({ ...it, date: h.date }); }));
   return out;
 }
 function judge(ex, it) { // 'top' = obere Grenze überall erreicht, 'fail' = Satz verfehlt oder fehlt, 'ok' = dazwischen, null = nicht bewertbar
@@ -516,7 +520,7 @@ function judge(ex, it) { // 'top' = obere Grenze überall erreicht, 'fail' = Sat
   return state;
 }
 function suggestion(ex) {
-  const step = ex.step > 0 ? ex.step : 2.5, h = histOf(ex.name);
+  const step = ex.step > 0 ? ex.step : 2.5, h = histOf(ex.name, dayOf(ex));
   if (h.length < 1) return null;
   const a = h[h.length - 1], b = h[h.length - 2];
   if (!(a.weight > 0)) return null;
@@ -529,7 +533,7 @@ function suggestion(ex) {
 }
 function resW(ex, ss, i) { // Vorrang: eingegeben, dann letzte Einheit, dann Plan
   const v = filled(ss, 'w', ex.id, i); if (v !== undefined) return v;
-  const l = lastOf(eName(ex, ss)), all = l && l.detail ? l.detail : [];
+  const l = lastOf(eName(ex, ss), dayOf(ex)), all = l && l.detail ? l.detail : [];
   if (ex.plan && ex.plan[i]) {
     const warm = isWarm(ex, i), pool = all.filter((s) => !!s.warm === warm);
     if (pool.length) { const k = ex.plan.slice(0, i).filter((_, j) => isWarm(ex, j) === warm).length; return (pool[k] || pool[pool.length - 1]).w; } // gleicher Satztyp an gleicher Stelle
@@ -670,7 +674,7 @@ function printHTML(dayIds, withImg, withLast) {
         const tg = `${num(s.w) ? esc(s.w) + ' kg × ' : ''}${esc(s.r)}`;
         return `<div class="pset ${s.warm ? 'w' : ''}"><div class="ph"><b>${s.warm ? 'W' : i + 1}</b><span>${tg}</span><i class="pbox"></i></div><div class="pl"><em>kg</em></div><div class="pl"><em>Wdh.</em></div></div>`;
       }).join('');
-      const last = withLast ? lastOf(ex.name) : null;
+      const last = withLast ? lastOf(ex.name, dayOf(ex)) : null;
       return `<div class="pex">${u ? `<img class="pimg" src="${esc(u)}" alt="">` : ''}<div class="pbody">
         <div class="ptitle"><span class="pn">${n + 1}</span><span class="pname">${esc(ex.name)}</span>${ex.up ? '<span class="pup">↑ Gewicht steigern</span>' : ''}<span class="pmeta">${target}${target ? ' · ' : ''}Pause ${fmtT(ex.rest || S.settings.rest)}</span></div>
         ${ex.alt ? `<div class="pnote">⇄ Alternative: ${esc(ex.alt)}</div>` : ''}
@@ -748,7 +752,7 @@ function viewTrain() {
   const cards = day.exercises.map((ex) => {
     const arr = (ss.sets[ex.id] = padSets(ss.sets[ex.id], ex.sets));
     total += arr.length; done += arr.filter(Boolean).length;
-    const en = eName(ex, ss), sw = swapped(ex, ss), last = lastOf(en);
+    const en = eName(ex, ss), sw = swapped(ex, ss), last = lastOf(en, day);
     const info = findLib(en) ? `<button class="ic info" data-a="exinfo" data-name="${esc(en)}" aria-label="Übungsinfo">ℹ︎</button>` : '';
     const upNow = ex.up && ex.upAt !== today(), upSet = ex.up && !upNow;
     const sg = !sw && !ss.sug[ex.id] && !(ss.sets[ex.id] || []).some(Boolean) ? suggestion(ex) : null;
@@ -940,14 +944,14 @@ function finish() {
     if (!detail.length) return;
     const work = detail.filter((s) => !s.warm), pool = work.length ? work : detail;
     const top = pool.reduce((a, b) => (b.w >= a.w ? b : a)); // schwerster Arbeitssatz für Verlauf und Diagramm
-    const en = eName(ex, ss), prev = lastOf(en);
+    const en = eName(ex, ss), prev = lastOf(en, day);
     items.push({ name: en, weight: top.w, reps: top.r, sets: detail.length, planned: ex.sets, detail });
     if (ex.up && ex.upAt !== today() && prev && top.w > prev.weight) ex.up = false; // Steigerung geschafft: Markierung zurücknehmen
     if (!ex.plan && !swapped(ex, ss)) ex.weight = top.w; // Plan-Gewicht für das nächste Mal übernehmen (bei Einzelplanung bleibt der Plan unverändert)
   });
   if (!items.length) { toast('Noch keine Sätze abgehakt'); return; }
   const dur = ss.t0 ? Math.max(10, Math.min(180, Math.round((Date.now() - ss.t0) / 60000))) : 0; // Minuten, 10 bis 180
-  S.history.push({ id: rid(), date: new Date().toISOString(), day: day.name, items, ...(dur ? { dur } : {}) });
+  S.history.push({ id: rid(), date: new Date().toISOString(), day: day.name, dayId: day.id, items, ...(dur ? { dur } : {}) });
   delete S.sessions[day.id];
   stopRest(); saveNow(); render(); toast('Training gespeichert 💪');
 }
@@ -1101,7 +1105,7 @@ async function act(a, d) {
       S.custom = S.custom.filter((e) => norm(e.name) !== norm(d.name)); closeModal(); break;
     }
     case 'addToPlan': {
-      const day = findDay($('#addDay').value), e = findLib(d.name), last = lastOf(e.name);
+      const day = findDay($('#addDay').value), e = findLib(d.name), last = lastOf(e.name, day);
       day.exercises.push({ id: rid(), name: e.name, sets: 3, reps: '10', weight: last ? last.weight : 0, note: '' });
       closeModal(); toast(`„${e.name}“ zu „${day.name}“ hinzugefügt`); break;
     }
