@@ -166,6 +166,53 @@ const MEAL_SCHEMA = { type: 'object', additionalProperties: false, required: ['i
   items: { type: 'array', maxItems: 12, items: { type: 'object', additionalProperties: false, required: ['name', 'grams', 'kcal', 'protein', 'carbs', 'fat', 'confidence'],
     properties: { name: { type: 'string' }, grams: { type: 'number' }, kcal: { type: 'number' }, protein: { type: 'number' }, carbs: { type: 'number' }, fat: { type: 'number' }, confidence: { type: 'string', enum: ['low', 'medium', 'high'] } } } } } };
 const MEAL_PROMPT = 'Du bist Ernährungsexperte. Analysiere das Foto einer Mahlzeit. Zerlege sie in einzelne Lebensmittel (deutsche Namen, kurz, z. B. "Spaghetti, gekocht", "Hackfleischsoße"). Schätze für jedes die verzehrte Menge in Gramm anhand von Tellergröße, Besteck und Proportionen sowie die Gesamtwerte für genau diese Menge: kcal, Protein, Kohlenhydrate und Fett in Gramm. Die Kalorien sollen zu den Makros passen (4/4/9 kcal pro g). Füge sichtbare Öle, Saucen und Beläge hinzu. Gib bei unsicheren Schätzungen confidence "low" an. Erkennst du kein Essen, gib eine leere Liste zurück und erkläre es in note. Antworte nur im vorgegebenen JSON.';
+// FDDB (fddb.mobi): keine offizielle API, deshalb wird die öffentliche Mobilseite nur auf Nutzeranfrage gelesen. Gedrosselt, zwischengespeichert, fester Host.
+const FDDB = process.env.FDDB_BASE || 'https://fddb.mobi';
+const FDDB_UA = 'Trainingsplan/1.0 (privat, selbst gehostet)';
+const fddbCache = new Map(); // url -> {t, v}
+let fddbLast = 0;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function fddbGet(urlPath) {
+  const now = Date.now(), at = Math.max(now, fddbLast + 300); fddbLast = at; if (at > now) await sleep(at - now); // höchstens ca. 3 Abrufe pro Sekunde
+  const r = await fetch(FDDB + urlPath, { headers: { 'User-Agent': FDDB_UA, 'Accept-Language': 'de' }, signal: AbortSignal.timeout(12000), redirect: 'follow' });
+  if (!r.ok) throw new Error('FDDB antwortet mit ' + r.status);
+  return (await r.text()).slice(0, 600000);
+}
+const htmlText = (h) => h.replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&auml;/g, 'ä').replace(/&ouml;/g, 'ö').replace(/&uuml;/g, 'ü').replace(/&Auml;/g, 'Ä').replace(/&Ouml;/g, 'Ö').replace(/&Uuml;/g, 'Ü').replace(/&szlig;/g, 'ß').replace(/&#(\d+);/g, (m, d) => String.fromCharCode(+d)).replace(/\s+/g, ' ').trim();
+const deNum = (x) => parseFloat(String(x).replace(/\./g, '').replace(',', '.'));
+function parseFddbProduct(html, fallbackName) {
+  const t = htmlText(html), g = (re) => { const m = t.match(re); return m ? deNum(m[1]) : NaN; };
+  const k = g(/Kalorien\s*([\d.,]+)\s*kcal/i), pr = g(/Protein\s*([\d.,]+)\s*g/i), c = g(/Kohlenhydrate\s*([\d.,]+)\s*g/i), f = g(/Fett\s*([\d.,]+)\s*g/i);
+  if (![k, pr, c, f].every(Number.isFinite)) return null;
+  const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i), name = (fallbackName || (h1 && htmlText(h1[1])) || '').slice(0, 80);
+  if (!name) return null;
+  const portions = [], seen = new Set(), re = /(Portion|Esslöffel|Teelöffel|Becher|Stück|Scheiben?|Tasse|Glas|Packung|Riegel|Kugel|Handvoll|Dose|Flasche|Brötchen|Schale|Löffel)\s*\((\d+(?:[.,]\d+)?)\s*g\)/g;
+  let m; while ((m = re.exec(t)) && portions.length < 6) { const gr = deNum(m[2]), key = m[1] + gr; if (gr > 0 && gr <= 2000 && !seen.has(key)) { seen.add(key); portions.push({ n: m[1], g: gr }); } }
+  return { name, brand: '', code: '', kcal: k, p: pr, c, f, portions };
+}
+function parseFddbSearch(html) {
+  const out = [], seen = new Set(), re = /<a\b[^>]*href="((?:https?:\/\/fddb\.mobi)?\/de\/[a-z0-9_\-]+\.html)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let m; while ((m = re.exec(html))) {
+    const href = m[1].replace(/^https?:\/\/fddb\.mobi/, ''), name = htmlText(m[2]);
+    if (!name || name.length < 2 || seen.has(href) || /^(de|en)\//.test(href)) continue;
+    seen.add(href); out.push({ href, name });
+  }
+  return out;
+}
+async function fddbSearch(q) {
+  const key = 's:' + q.toLowerCase(), hit = fddbCache.get(key);
+  if (hit && Date.now() - hit.t < 36e5) return hit.v;
+  const list = parseFddbSearch(await fddbGet('/search/?lang=de&cat=mobile-de&search=' + encodeURIComponent(q))).slice(0, 6), res = [];
+  for (const it of list) {
+    let v; const ph = fddbCache.get(it.href);
+    if (ph && Date.now() - ph.t < 6048e5) v = ph.v;
+    else { try { v = parseFddbProduct(await fddbGet(it.href), it.name); } catch { v = null; } if (v) fddbCache.set(it.href, { t: Date.now(), v }); }
+    if (v) res.push({ ...v, url: FDDB + it.href });
+  }
+  if (fddbCache.size > 500) fddbCache.delete(fddbCache.keys().next().value);
+  if (res.length) fddbCache.set(key, { t: Date.now(), v: res });
+  return res;
+}
 const OFF_FIELDS = 'code,product_name,brands,nutriments';
 function normFood(pr) {
   const n = pr.nutriments || {}, name = String(pr.product_name || '').trim();
@@ -337,6 +384,15 @@ const server = http.createServer(async (req, res) => {
         photoUse.set(key, Math.max(0, (photoUse.get(key) || 1) - 1));
         return send(res, 502, { error: 'Foto-Analyse nicht erreichbar: ' + String(e.message || e) });
       }
+    }
+
+    if (p === '/api/fddbsearch' && method === 'GET') {
+      const cu = a && a.r === 'u' ? read(a.id) : null;
+      if (!a || (a.r === 'u' && !(cu && a.k === fp(cu)))) return send(res, 401, { error: 'Nicht angemeldet' });
+      const q = String(new URL(req.url, 'http://x').searchParams.get('q') || '').trim().slice(0, 60);
+      if (q.length < 2) return send(res, 400, { error: 'Bitte einen Suchbegriff eingeben' });
+      try { return send(res, 200, { results: await fddbSearch(q) }); }
+      catch (e) { return send(res, 502, { error: 'FDDB nicht erreichbar: ' + String(e.message || e) }); }
     }
 
     if (p === '/api/foodsearch' && method === 'GET') {

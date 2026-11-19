@@ -209,16 +209,17 @@ function pickListHTML() {
     const res = poolSearch(q);
     html += res.length ? push(res) : '<p class="muted small">Nichts in der eingebauten Liste gefunden.</p>';
   }
+  if (nui.fddb && nui.fddb.length) html += `<div class="lsub">FDDB</div>${push(nui.fddb.map((x) => toFood(x, 'online')), 'FDDB')}`;
   if (nui.online.length) html += `<div class="lsub">Online (Open Food Facts)</div>${push(nui.online.map((x) => toFood(x, 'online')), 'online')}`;
   return html;
 }
 function openPicker(meal, tplId, q = '') {
-  nui.pick = { meal, tplId: tplId || null, q }; nui.online = []; nui.onlineMsg = '';
+  nui.pick = { meal, tplId: tplId || null, q }; nui.online = []; nui.fddb = []; nui.onlineMsg = '';
   const title = tplId ? 'Zur Vorlage hinzufügen' : 'Lebensmittel hinzufügen';
   openModal(`<div class="row"><h2 class="grow" style="margin:0">${title}<small class="muted" style="font:500 14px var(--body);display:block">${esc(meal)}</small></h2><button class="btn" data-a="nDone">Fertig</button></div>
     <div class="row" style="margin-top:10px"><input id="nQ" class="grow" type="search" data-f="n.q" maxlength="80" placeholder="Lebensmittel oder Barcode suchen" autocomplete="off" value="${esc(q)}"></div>
     <div class="row" style="flex-wrap:wrap"><button class="btn grow" data-a="nScan">📷 Barcode scannen</button><label class="btn grow">🍽 Foto analysieren<input type="file" accept="image/*" capture="environment" data-f="n.photo" hidden></label></div>
-    <div class="row" style="flex-wrap:wrap"><button class="btn grow" data-a="nOnline">🔎 Online suchen</button><button class="btn grow" data-a="nNewFood">＋ Eigenes Lebensmittel</button></div>
+    <div class="row" style="flex-wrap:wrap"><button class="btn grow" data-a="nOnline">🔎 Open Food Facts</button><button class="btn grow" data-a="nFddb">🔎 FDDB</button><button class="btn grow" data-a="nNewFood">＋ Eigenes Lebensmittel</button></div>
     <div id="nMsg" class="muted small"></div><div id="nList" class="altlist">${pickListHTML()}</div>`);
 }
 function openAmount(a) { // a: {food, g, meal, kind, tplId, editId}
@@ -301,6 +302,13 @@ async function nutriAct(a, d) {
       } catch (e) { nui.online = []; $('#nMsg').textContent = e.network ? 'Keine Verbindung: Die Online-Suche braucht Internet.' : e.message; }
       $('#nList').innerHTML = pickListHTML(); return 1;
     }
+    case 'nFddb': {
+      const q = ($('#nQ').value || '').trim(); if (q.length < 2) { toast('Bitte einen Suchbegriff eingeben'); return 1; }
+      nui.pick.q = q; $('#nMsg').textContent = 'FDDB wird durchsucht…';
+      try { const r = await api('/fddbsearch?q=' + encodeURIComponent(q)); nui.fddb = r.results || []; $('#nMsg').textContent = nui.fddb.length ? '' : 'Bei FDDB nichts gefunden.'; }
+      catch (e) { nui.fddb = []; $('#nMsg').textContent = e.network ? 'Keine Verbindung: Die FDDB-Suche braucht Internet.' : e.message; }
+      $('#nList').innerHTML = pickListHTML(); return 1;
+    }
     case 'nNewFood': newFoodModal(); return 1;
     case 'nSaveFood': {
       const name = $('#nfName').value.trim(), k = num($('#nfK').value), p = num($('#nfP').value), c = num($('#nfC').value), f = num($('#nfF').value);
@@ -320,7 +328,7 @@ async function nutriAct(a, d) {
         closeModal(); afterChange(); return 1;
       }
       if (f.src === 'online' && !S.nutri.foods.some((x) => (f.code && x.code === f.code) || norm(foodName(x)) === norm(foodName(f)))) {
-        S.nutri.foods.push({ id: rid(), name: foodName(f), code: f.code, kcal: f.per.k, p: f.per.p, c: f.per.c, f: f.per.f }); // merken für offline und „Meine Lebensmittel“
+        S.nutri.foods.push({ id: rid(), name: foodName(f), code: f.code, kcal: f.per.k, p: f.per.p, c: f.per.c, f: f.per.f, ...(f.portions && f.portions.length ? { portions: f.portions } : {}) }); // merken für offline und „Meine Lebensmittel“
       }
       const entry = { id: rid(), meal, name: foodName(f), g, per: { ...f.per } };
       if (A.kind === 'tpl') tplById(A.tplId).items.push(entry); else dayLog(nui.date).push(entry);
