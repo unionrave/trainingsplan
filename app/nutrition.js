@@ -524,7 +524,7 @@ async function analyzePhoto(file) {
   const meal = nui.pick ? nui.pick.meal : MEALS[0], tplId = nui.pick ? nui.pick.tplId : null;
   openModal(`<h2 style="margin:0 0 8px">Foto wird analysiert…</h2><p class="muted">Das dauert meist 5 bis 20 Sekunden.</p><div class="spin" aria-hidden="true"></div>`);
   try {
-    const dataUrl = await blobToDataURL(await resizeImage(file, 1280));
+    const dataUrl = await blobToDataURL(await resizeImage(file, 1024));
     const r = await api('/mealphoto', { method: 'POST', body: JSON.stringify({ image: dataUrl }) });
     nui.ai = { meal, tplId, note: r.note, items: r.items.map((x) => ({ ...x, g: x.grams, on: true })) };
     aiModal();

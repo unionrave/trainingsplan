@@ -167,6 +167,8 @@ function setAiKey(id, key) { const iv = crypto.randomBytes(12), c = crypto.creat
 function getAiKey(id) { try { const b = fs.readFileSync(keyFile(id)), d = crypto.createDecipheriv('aes-256-gcm', KEY_ENC(), b.subarray(0, 12)); d.setAuthTag(b.subarray(12, 28)); return Buffer.concat([d.update(b.subarray(28)), d.final()]).toString('utf8'); } catch { return ''; } }
 const delAiKey = (id) => { try { fs.unlinkSync(keyFile(id)); } catch {} };
 const photoUse = new Map();
+const MEAL_EFFORT = ['none', 'low', 'medium', 'high'].includes(process.env.MEALPHOTO_EFFORT) ? process.env.MEALPHOTO_EFFORT : 'low'; // Denkaufwand des Modells
+const MEAL_DETAIL = ['low', 'high', 'auto'].includes(process.env.MEALPHOTO_DETAIL) ? process.env.MEALPHOTO_DETAIL : 'high'; // Bilddetail
 const MEAL_SCHEMA = { type: 'object', additionalProperties: false, required: ['items', 'note'], properties: {
   note: { type: 'string' },
   items: { type: 'array', maxItems: 12, items: { type: 'object', additionalProperties: false, required: ['name', 'grams', 'kcal', 'protein', 'carbs', 'fat', 'confidence'],
@@ -396,11 +398,11 @@ const server = http.createServer(async (req, res) => {
       if (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(img) || img.length > 1.8e6) return send(res, 400, { error: 'Bild ungültig oder zu groß' });
       photoUse.set(key, (photoUse.get(key) || 0) + 1);
       try {
-        const payload = { model: OPENAI_MODEL, max_completion_tokens: 3000, reasoning_effort: 'low',
+        const payload = { model: OPENAI_MODEL, max_completion_tokens: 3000, reasoning_effort: MEAL_EFFORT,
           response_format: { type: 'json_schema', json_schema: { name: 'meal', strict: true, schema: MEAL_SCHEMA } },
           messages: [{ role: 'system', content: MEAL_PROMPT }, { role: 'user', content: [
             { type: 'text', text: 'Bitte analysiere diese Mahlzeit.' + (body.note ? ' Hinweis der Person: ' + String(body.note).slice(0, 200) : '') },
-            { type: 'image_url', image_url: { url: img, detail: 'high' } }] }] };
+            { type: 'image_url', image_url: { url: img, detail: MEAL_DETAIL } }] }] };
         const call = (pl) => fetch(OPENAI_BASE + '/v1/chat/completions', { method: 'POST', signal: AbortSignal.timeout(90000), headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + userKey }, body: JSON.stringify(pl) });
         let r = await call(payload), j = await r.json().catch(() => null);
         if (r.status === 400 && j && j.error && /reasoning_effort|response_format|max_completion_tokens|json_schema/i.test(j.error.message || '')) { // Modell kennt eine Option nicht: ohne die optionalen Felder erneut
