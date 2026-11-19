@@ -284,6 +284,11 @@ const server = http.createServer(async (req, res) => {
     const ip = req.socket.remoteAddress || '';
     const method = req.method;
 
+    if (method === 'GET' && p === '/') { // nutrition.js mit Versionsnummer einbinden, damit Proxys/CDNs nach Updates keine alte Datei ausliefern
+      let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      try { html = html.replace('src="/nutrition.js"', 'src="/nutrition.js?v=' + Math.round(fs.statSync(path.join(__dirname, 'nutrition.js')).mtimeMs) + '"'); } catch {}
+      return send(res, 200, html, 'text/html; charset=utf-8');
+    }
     if (method === 'GET' && STATIC[p]) {
       const [f, type] = STATIC[p];
       return send(res, 200, fs.readFileSync(path.join(__dirname, f)), type);

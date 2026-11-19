@@ -2,7 +2,7 @@
    - Programmdateien: zuerst Netz (damit Updates nach einem git pull sofort ankommen), sonst Zwischenspeicher
    - Schriften, Symbole, Übungsbilder: aus dem Zwischenspeicher, beim ersten Mal geladen
    - /api/ wird nie abgefangen; Speichern und Synchronisieren macht die App selbst */
-const VERSION = 'v2';
+const VERSION = 'v3';
 const SHELL = 'tp-shell-' + VERSION, RUN = 'tp-run-' + VERSION;
 const PRECACHE = ['/', '/library.json', '/foods.json', '/nutrition.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png',
   '/fonts/big-shoulders-display-latin-700-normal.woff2', '/fonts/big-shoulders-display-latin-800-normal.woff2',
