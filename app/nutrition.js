@@ -219,7 +219,8 @@ function openPicker(meal, tplId, q = '') {
   const title = tplId ? 'Zur Vorlage hinzufügen' : 'Lebensmittel hinzufügen';
   openModal(`<div class="row"><h2 class="grow" style="margin:0">${title}<small class="muted" style="font:500 14px var(--body);display:block">${esc(meal)}</small></h2><button class="btn" data-a="nDone">Fertig</button></div>
     <div class="row" style="margin-top:10px"><input id="nQ" class="grow" type="search" data-f="n.q" maxlength="80" placeholder="Lebensmittel oder Barcode suchen" autocomplete="off" value="${esc(q)}"></div>
-    <div class="row" style="flex-wrap:wrap"><button class="btn grow" data-a="nScan">📷 Barcode scannen</button><label class="btn grow">🍽 Foto analysieren<input type="file" accept="image/*" capture="environment" data-f="n.photo" hidden></label></div>
+    <div class="row" style="flex-wrap:wrap"><button class="btn grow" data-a="nScan">📷 Barcode scannen</button></div>
+    <div class="row" style="flex-wrap:wrap"><label class="btn grow">🍽 Mahlzeit fotografieren<input type="file" accept="image/*" capture="environment" data-f="n.photo" hidden></label><label class="btn grow">🖼 Foto aus Galerie<input type="file" accept="image/*" data-f="n.photo" hidden></label></div>
     <div class="row" style="flex-wrap:wrap"><button class="btn grow" data-a="nOnline">🔎 Open Food Facts</button><button class="btn grow" data-a="nFddb">🔎 FDDB</button><button class="btn grow" data-a="nNewFood">＋ Eigenes Lebensmittel</button></div>
     <div id="nMsg" class="muted small"></div><div id="nList" class="altlist">${pickListHTML()}</div>`);
 }
