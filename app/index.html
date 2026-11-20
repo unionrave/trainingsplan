@@ -311,6 +311,16 @@ i.mp,.dot.mp{background:#4a8dff}i.mc,.dot.mc{background:#f5c431}i.mf,.dot.mf{bac
 .spin{width:36px;height:36px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--ok);animation:sp 1s linear infinite;margin:14px auto}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+
+.wstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.wstat b{font:800 24px/1.1 var(--display);display:block}.wstat small{color:var(--muted);font-size:12px}
+.wchart{width:100%;height:auto;display:block}
+.wchart .wg{stroke:var(--line);stroke-width:1}.wchart .wt{fill:var(--muted);font:11px var(--body)}.wchart .wt.goal{fill:var(--blue)}
+.wchart .wavg{fill:none;stroke:var(--ok);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.wchart .wdot{fill:var(--muted);opacity:.6}.wchart .wcur{fill:var(--ok);stroke:var(--card-solid);stroke-width:2}
+.wchart .wgoal{stroke:var(--blue);stroke-width:1.5;stroke-dasharray:5 4}
+.lg{display:inline-block;vertical-align:middle;margin:0 5px 0 10px}.lg:first-child{margin-left:0}
+.lg.dots{width:8px;height:8px;border-radius:50%;background:var(--muted);opacity:.6}.lg.avgl{width:18px;height:3px;border-radius:2px;background:var(--ok)}.lg.goall{width:18px;border-top:2px dashed var(--blue)}
 </style>
 </head>
 <body data-tab="train">

@@ -28,13 +28,19 @@ function nutriEnsure() {
   if (!S) return;
   const n = (S.nutri = S.nutri || {});
   n.profile = Object.assign({ sex: 'm', age: '', height: '', weight: '', activity: 1.35, goal: 'maintain', adj: '', prot: '', fat: 25 }, n.profile || {});
-  S.cardio = S.cardio || []; n.foods = n.foods || []; n.log = n.log || {}; n.templates = n.templates || []; n.week = n.week || {};
+  S.cardio = S.cardio || []; n.weights = n.weights || []; n.foods = n.foods || []; n.log = n.log || {}; n.templates = n.templates || []; n.week = n.week || {};
   if (!nui.date) nui.date = dstr();
 }
 
 /* ---------- Berechnung ---------- */
-const profOK = (p) => num(p.age) > 0 && num(p.height) > 0 && num(p.weight) > 0;
-const bmr = (p) => 10 * num(p.weight) + 6.25 * num(p.height) - 5 * num(p.age) + (p.sex === 'f' ? -161 : 5); // Mifflin-St Jeor
+// Gewicht für die Berechnung: Durchschnitt der Einträge der 7 Tage bis zum letzten Eintrag (glättet Wasserschwankungen), sonst das Profilgewicht
+function effW(ds) {
+  const ws = (S.nutri && S.nutri.weights) || [], ref = ds || '9999-12-31', le = ws.filter((w) => w.d <= ref), list = le.length ? le : ws;
+  if (list.length) { const t = dateObj(list[list.length - 1].d).getTime(), win = list.filter((w) => t - dateObj(w.d).getTime() <= 6 * 864e5); return win.reduce((a, w) => a + w.kg, 0) / win.length; }
+  return num(S.nutri.profile.weight) || 0;
+}
+const profOK = (p) => num(p.age) > 0 && num(p.height) > 0 && effW() > 0;
+const bmr = (p) => 10 * effW() + 6.25 * num(p.height) - 5 * num(p.age) + (p.sex === 'f' ? -161 : 5); // Mifflin-St Jeor
 
 function trainKcal(h, weight) { // geschätzter Verbrauch einer Einheit: MET × Gewicht × Dauer
   const sets = (h.items || []).reduce((a, i) => a + (i.detail ? i.detail.length : i.sets || 0), 0);
@@ -49,7 +55,7 @@ function trainOn(ds, weight) {
     + S.cardio.filter((c) => localDay(c.date) === ds).reduce((a, c) => a + cardioKcal(c, weight), 0);
 }
 function trainAvg(p) { // durchschnittlicher Trainingsverbrauch pro Tag (letzte bis zu 28 Tage), sonst aus dem Plan geschätzt
-  const w = num(p.weight), now = Date.now(), win = 28 * 864e5;
+  const w = effW(), now = Date.now(), win = 28 * 864e5;
   const recent = S.history.filter((h) => now - new Date(h.date).getTime() <= win);
   const rc = S.cardio.filter((c) => now - new Date(c.date).getTime() <= win);
   if (recent.length || rc.length) {
@@ -63,7 +69,7 @@ function trainAvg(p) { // durchschnittlicher Trainingsverbrauch pro Tag (letzte 
 }
 function targets() {
   const p = S.nutri.profile; if (!profOK(p)) return null;
-  const w = num(p.weight), B = bmr(p), base = B * num(p.activity), tr = trainAvg(p), tdee = base + tr.perDay;
+  const w = effW(), B = bmr(p), base = B * num(p.activity), tr = trainAvg(p), tdee = base + tr.perDay;
   const g = GOALS[p.goal] || GOALS.maintain, adj = p.adj === '' || p.adj == null ? g[1] : num(p.adj);
   let kcal = Math.round(tdee * (1 + adj / 100) / 10) * 10, floored = false;
   if (kcal < Math.round(B)) { kcal = Math.round(B); floored = true; } // nie unter den Grundumsatz
@@ -95,14 +101,14 @@ function macroBars(t, T) {
 function viewNutri() {
   nutriEnsure();
   const chip = (k, l) => `<button class="chip ${nui.sub === k ? 'on' : ''}" data-a="nSub" data-k="${k}">${l}</button>`;
-  const body = nui.sub === 'plans' ? viewPlans() : nui.sub === 'profile' ? viewProfile() : viewToday();
-  return `<div class="chips">${chip('today', 'Tagebuch')}${chip('plans', 'Pläne')}${chip('profile', 'Profil & Ziele')}</div>${body}`;
+  const body = nui.sub === 'weight' ? viewWeight() : nui.sub === 'plans' ? viewPlans() : nui.sub === 'profile' ? viewProfile() : viewToday();
+  return `<div class="chips">${chip('today', 'Tagebuch')}${chip('plans', 'Pläne')}${chip('weight', 'Gewicht')}${chip('profile', 'Profil')}</div>${body}`;
 }
 
 function viewToday() {
   const ds = nui.date, T = targets(), p = S.nutri.profile, log = dayLog(ds), tot = sum(log), isToday = ds === dstr();
   const label = isToday ? 'Heute' : dateObj(ds).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
-  const tk = profOK(p) ? trainOn(ds, num(p.weight)) : 0, exp = T ? T.base + tk : 0;
+  const tk = profOK(p) ? trainOn(ds, effW(ds)) : 0, exp = T ? T.base + tk : 0;
   const trained = [...S.history.filter((h) => localDay(h.date) === ds).map((h) => h.day), ...S.cardio.filter((c) => localDay(c.date) === ds).map(cardioName)].join(', ');
   const wd = (dateObj(ds).getDay() + 6) % 7, tpl = S.nutri.templates.find((t) => t.id === S.nutri.week[wd]);
   const nav = `<div class="row dnav"><button class="ic" data-a="nDay" data-d="-1" aria-label="Vorheriger Tag">‹</button><div class="grow dlabel"><b>${esc(label)}</b>${isToday ? `<small class="muted">${esc(dateObj(ds).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' }))}</small>` : ''}</div>${isToday ? '' : '<button class="chip" data-a="nToday">Heute</button>'}<button class="ic" data-a="nDay" data-d="1" aria-label="Nächster Tag">›</button></div>`;
@@ -147,6 +153,7 @@ function profileCalcHTML() {
   if (!T) return '<div class="muted small">Trag Alter, Größe und Gewicht ein, dann erscheinen hier die Ergebnisse.</div>';
   const g = GOALS[p.goal] || GOALS.maintain;
   return `<div class="calc">
+    <div class="crow"><span>Gewicht für die Rechnung${S.nutri.weights.length ? ' (Ø 7 Tage aus dem Tracking)' : ' (aus dem Profil)'}</span><b>${f1(T.w)} kg</b></div>
     <div class="crow"><span>Grundumsatz</span><b>${f0(T.bmr)} kcal</b></div>
     <div class="crow"><span>Alltag (× ${num(p.activity).toLocaleString("de-DE")})</span><b>+ ${f0(T.base - T.bmr)} kcal</b></div>
     <div class="crow"><span>Training (Ø pro Tag)</span><b>+ ${f0(T.tr.perDay)} kcal</b></div>
@@ -295,6 +302,17 @@ async function nutriAct(a, d) {
       if (!confirm('Diesen Cardio-Eintrag löschen?')) return 1;
       S.cardio = S.cardio.filter((c) => c.id !== d.id); await saveNow(); render(); return 1;
     }
+    case 'nWSave': {
+      const kg = num($('#nwKg').value.replace(',', '.')), d = $('#nwDate').value || dstr();
+      if (!(kg >= 20 && kg <= 400)) { toast('Bitte ein Gewicht zwischen 20 und 400 kg eingeben'); return 1; }
+      const ws = S.nutri.weights, e = ws.find((w) => w.d === d); if (e) e.kg = Math.round(kg * 10) / 10; else ws.push({ d, kg: Math.round(kg * 10) / 10 });
+      ws.sort((a, b) => a.d.localeCompare(b.d)); await saveNow(); render(); toast('Gewicht gespeichert'); return 1;
+    }
+    case 'nWDel': {
+      if (!confirm('Diesen Gewichtseintrag löschen?')) return 1;
+      S.nutri.weights = S.nutri.weights.filter((w) => w.d !== d.d); await saveNow(); render(); return 1;
+    }
+    case 'nWRange': nui.wr = +d.d; render(); return 1;
     case 'nSub': nui.sub = d.k; render(); return 1;
     case 'nDay': nui.date = dstr(new Date(dateObj(nui.date).getTime() + (+d.d) * 864e5)); render(); return 1;
     case 'nToday': nui.date = dstr(); render(); return 1;
@@ -395,6 +413,7 @@ async function nutriAct(a, d) {
 function nutriInput(f, el, v) {
   nutriEnsure();
   if (f === 'n.q') { nui.pick.q = v; if (/^\d{8,14}$/.test(v.trim())) $('#nMsg').textContent = 'Barcode erkannt: „Online suchen“ tippen.'; else if ($('#nMsg').textContent.startsWith('Barcode')) $('#nMsg').textContent = ''; $('#nList').innerHTML = pickListHTML(); return; }
+  if (f === 'n.goalw') { S.nutri.profile.goalW = v; save(); return; }
   if (f === 'n.g') { updPrev(); return; }
   if (f === 'n.aig') { const x = nui.ai.items[+el.dataset.i], g = num(v); x.g = g > 0 ? g : 0; const t = aiScale(x, x.g), e = document.getElementById('aiv' + el.dataset.i); if (e) e.textContent = `${f0(t.k)} kcal · P ${f0(t.p)} · KH ${f0(t.c)} · F ${f0(t.f)}`; document.getElementById('aiTot').innerHTML = aiTotals(); return; }
   if (f === 'n.cmin' || f === 'n.ckcal') { cardioPrev(); return; }
@@ -422,20 +441,20 @@ function cardioListHTML(list, w, withDate) {
 }
 function cardioHTML() { // Karte im Tab Training
   nutriEnsure();
-  const w = num(S.nutri.profile.weight) || 75, ds = dstr(), list = S.cardio.filter((c) => localDay(c.date) === ds);
+  const w = effW() || 75, ds = dstr(), list = S.cardio.filter((c) => localDay(c.date) === ds);
   return `<div class="card"><div class="mealhead"><div class="grow"><b class="exname" style="font-size:22px">Cardio</b>${list.length ? `<div class="muted small">Heute ${f0(list.reduce((a, c) => a + cardioKcal(c, w), 0))} kcal</div>` : '<div class="muted small">Laufband, Rad, Stairmaster, Crosstrainer</div>'}</div><button class="btn" data-a="nCardioOpen">＋ Erfassen</button></div>${cardioListHTML(list, w)}</div>`;
 }
 function cardioHistHTML() { // Abschnitt im Tab Verlauf
   nutriEnsure(); if (!S.cardio.length) return '';
-  const w = num(S.nutri.profile.weight) || 75;
+  const w = effW() || 75;
   return `<h2 style="margin:16px 0 8px">Cardio</h2><div class="card">${cardioListHTML([...S.cardio].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 60), w, true)}</div>`;
 }
 function cardioPrev() {
   const hn = document.getElementById('nCHint'); if (hn) hn.textContent = CARDIO[cui.type][2][cui.lvl];
   const el = document.getElementById('nCPrev'); if (!el) return;
-  const min = num(document.getElementById('nCMin').value), kc = num(document.getElementById('nCKcal').value), w = num(S.nutri.profile.weight) || 75;
+  const min = num(document.getElementById('nCMin').value), kc = num(document.getElementById('nCKcal').value), w = effW() || 75;
   const v = kc > 0 ? kc : CARDIO[cui.type][1][cui.lvl] * w * min / 60;
-  el.innerHTML = `<div class="nprevk"><b>${f0(v)}</b><small> kcal</small></div><div class="muted small">${kc > 0 ? 'Wert vom Gerät' : `MET ${f1(CARDIO[cui.type][1][cui.lvl])} × ${f0(w)} kg × ${f0(min)} Min.${num(S.nutri.profile.weight) ? '' : ' (Gewicht 75 kg angenommen, trag deins im Profil ein)'}`}</div>`;
+  el.innerHTML = `<div class="nprevk"><b>${f0(v)}</b><small> kcal</small></div><div class="muted small">${kc > 0 ? 'Wert vom Gerät' : `MET ${f1(CARDIO[cui.type][1][cui.lvl])} × ${f0(w)} kg × ${f0(min)} Min.${effW() ? '' : ' (Gewicht 75 kg angenommen, trag deins im Gewichts-Tracking oder Profil ein)'}`}</div>`;
 }
 function cardioModal() {
   const T = CARDIO[cui.type];
@@ -560,4 +579,50 @@ async function loadKey() {
   if (nui.keyLoading) return; nui.keyLoading = true;
   try { nui.key = await api(`/users/${uid}/aikey`); } catch (e) { nui.key = { set: false, last4: '', model: '' }; }
   nui.keyLoading = false; const b = document.getElementById('nKeyBox'); if (b) b.innerHTML = keyBoxHTML();
+}
+
+/* ---------- Gewicht ---------- */
+const dayDiff = (a, b) => Math.round((dateObj(b) - dateObj(a)) / 864e5);
+const kgf = (n) => n.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const signed = (n, u) => (n > 0.049 ? '+' : n < -0.049 ? '−' : '±') + kgf(Math.abs(n)) + u;
+function weightTrend() { // kg pro Woche aus den Einträgen der letzten 28 Tage (Regressionsgerade), sonst null
+  const ws = S.nutri.weights, last = ws[ws.length - 1]; if (!last) return null;
+  const pts = ws.filter((w) => dayDiff(w.d, last.d) <= 28); if (pts.length < 3 || dayDiff(pts[0].d, last.d) < 7) return null;
+  const xs = pts.map((w) => dayDiff(pts[0].d, w.d)), mx = xs.reduce((a, b) => a + b) / xs.length, my = pts.reduce((a, w) => a + w.kg, 0) / pts.length;
+  const den = xs.reduce((a, x) => a + (x - mx) ** 2, 0); if (!den) return null;
+  return 7 * xs.reduce((a, x, i) => a + (x - mx) * (pts[i].kg - my), 0) / den;
+}
+function weightChart(range) {
+  const all = S.nutri.weights, goal = num(S.nutri.profile.goalW), t0 = range ? dstr(new Date(Date.now() - range * 864e5)) : '';
+  const pts = all.filter((w) => w.d >= t0);
+  if (pts.length < 2) return '<div class="muted small" style="padding:18px 0">Ab zwei Einträgen erscheint hier der Verlauf.</div>';
+  const W = 340, H = 190, L = 38, R = 10, T = 12, B = 26, tmin = dateObj(pts[0].d).getTime(), tmax = Math.max(dateObj(pts[pts.length - 1].d).getTime(), tmin + 6 * 864e5);
+  const avg = pts.map((w) => { const t = dateObj(w.d).getTime(), win = all.filter((x) => { const d = t - dateObj(x.d).getTime(); return d >= 0 && d <= 6 * 864e5; }); return { d: w.d, kg: win.reduce((a, x) => a + x.kg, 0) / win.length }; });
+  const vals = [...pts.map((w) => w.kg), ...(goal > 0 ? [goal] : [])];
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = Math.max(0.5, (hi - lo) * 0.12); lo = Math.floor((lo - pad) * 2) / 2; hi = Math.ceil((hi + pad) * 2) / 2;
+  const X = (d) => L + (dateObj(d).getTime() - tmin) / (tmax - tmin) * (W - L - R), Y = (v) => T + (hi - v) / (hi - lo) * (H - T - B);
+  const ticks = [lo, (lo + hi) / 2, hi].map((v) => `<line class="wg" x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="wt" x="${L - 5}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${kgf(v)}</text>`).join('');
+  const fd = (d) => dateObj(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  const line = avg.map((a) => `${X(a.d).toFixed(1)},${Y(a.kg).toFixed(1)}`).join(' ');
+  const cur = avg[avg.length - 1];
+  return `<svg class="wchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gewichtsverlauf von ${fd(pts[0].d)} bis ${fd(pts[pts.length - 1].d)}: von ${kgf(pts[0].kg)} auf ${kgf(pts[pts.length - 1].kg)} Kilogramm">${ticks}
+    ${goal > 0 && goal >= lo && goal <= hi ? `<line class="wgoal" x1="${L}" x2="${W - R}" y1="${Y(goal).toFixed(1)}" y2="${Y(goal).toFixed(1)}"/><text class="wt goal" x="${W - R}" y="${(Y(goal) - 4).toFixed(1)}" text-anchor="end">Ziel ${kgf(goal)}</text>` : ''}
+    <polyline class="wavg" points="${line}"/>${pts.map((w) => `<circle class="wdot" cx="${X(w.d).toFixed(1)}" cy="${Y(w.kg).toFixed(1)}" r="3"/>`).join('')}
+    <circle class="wcur" cx="${X(cur.d).toFixed(1)}" cy="${Y(cur.kg).toFixed(1)}" r="4.5"/>
+    <text class="wt" x="${L}" y="${H - 6}">${fd(pts[0].d)}</text><text class="wt" x="${W - R}" y="${H - 6}" text-anchor="end">${fd(pts[pts.length - 1].d)}</text></svg>
+    <div class="muted small"><i class="lg dots"></i>Messung <i class="lg avgl"></i>Ø 7 Tage${goal > 0 ? ' <i class="lg goall"></i>Zielgewicht' : ''}</div>`;
+}
+function viewWeight() {
+  const ws = S.nutri.weights, last = ws[ws.length - 1], p = S.nutri.profile, goal = num(p.goalW), range = nui.wr === undefined ? 90 : nui.wr;
+  const cur = last ? effW() : 0, first = ws[0], tr = weightTrend();
+  const stat = (v, l) => `<div class="wstat"><b>${v}</b><small>${l}</small></div>`;
+  const stats = last ? `<div class="wstats">${stat(kgf(cur) + ' kg', 'aktuell (Ø 7 Tage)')}${stat(ws.length > 1 ? signed(cur - first.kg, ' kg') : '–', 'seit dem ersten Eintrag')}${stat(tr === null ? '–' : signed(tr, ' kg'), 'Trend pro Woche')}${goal > 0 ? stat(signed(goal - cur, ' kg'), 'bis zum Ziel') : ''}</div>` : '';
+  const rb = (d, l) => `<button class="chip ${range === d ? 'on' : ''}" data-a="nWRange" data-d="${d}">${l}</button>`;
+  const rows = [...ws].reverse().slice(0, 14).map((w, i, a) => { const prev = a[i + 1]; return `<div class="nrow cardio"><span class="grow"><b>${esc(dateObj(w.d).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }))}</b>${prev ? `<small class="muted">${signed(w.kg - prev.kg, ' kg')} zum Eintrag davor</small>` : ''}</span><span class="nk">${kgf(w.kg)}<small> kg</small></span><button class="ic danger" data-a="nWDel" data-d="${w.d}" aria-label="Eintrag vom ${esc(w.d)} löschen">🗑</button></div>`; }).join('');
+  return `<div class="card"><h2>Gewicht eintragen</h2><div class="row" style="margin:0;align-items:flex-end;flex-wrap:wrap"><label class="pf" style="min-width:120px">Gewicht<span class="pfi"><input id="nwKg" type="number" inputmode="decimal" step="0.1" min="20" max="400" placeholder="${last ? kgf(last.kg) : '78,0'}"><small>kg</small></span></label><label class="pf" style="min-width:150px">Datum<input id="nwDate" type="date" value="${dstr()}" max="${dstr()}"></label><button class="btn primary" data-a="nWSave">Speichern</button></div>
+    <p class="muted small" style="margin:8px 0 0">Am besten morgens nach dem Aufstehen und vor dem Essen wiegen. Pro Tag zählt ein Wert, ein zweiter am selben Tag ersetzt den ersten. Für den Kalorienbedarf zählt der Durchschnitt der letzten 7 Tage.</p></div>
+  ${last ? `<div class="card">${stats}<div class="chips" style="margin:12px 0 4px">${rb(30, '30 Tage')}${rb(90, '90 Tage')}${rb(365, '1 Jahr')}${rb(0, 'Alles')}</div>${weightChart(range)}</div>` : '<div class="card muted">Noch kein Eintrag. Trag dein aktuelles Gewicht ein, dann zeigt die App Verlauf und Trend und rechnet den Kalorienbedarf damit.</div>'}
+  <div class="card"><h2>Zielgewicht</h2><label class="pf">Optional, erscheint im Diagramm<span class="pfi"><input type="number" inputmode="decimal" step="0.1" data-f="n.goalw" value="${esc(p.goalW || '')}" placeholder="z. B. 75"><small>kg</small></span></label></div>
+  ${rows ? `<div class="card"><h2>Einträge</h2>${rows}</div>` : ''}
+  <p class="muted small">Der Trend ist eine Schätzung aus den Einträgen der letzten 4 Wochen und braucht mindestens 3 Werte über 7 Tage. Einzelne Tage schwanken durch Wasser, Salz und Verdauung um 1 bis 2 kg.</p>`;
 }
